@@ -25,8 +25,8 @@ An examination of variance sensitivity among breeding Peregrine Falcons in respo
 
 
 ### Contributors
-Rebekah McKinnon
-Kim Mathot
-Erik Hedlin
-Alastair Franke
+* Rebekah McKinnon
+* Kim Mathot
+* Erik Hedlin
+* Alastair Franke
 
