@@ -6,7 +6,7 @@ An examination of variance sensitivity among breeding Peregrine Falcons in respo
 ### File Organization
 
 ```
-├──  Data
+├── Data
 │     ├── 
 │     ├── 
 │     ├── 
