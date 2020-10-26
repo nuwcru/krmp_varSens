@@ -10,6 +10,7 @@ library(lme4)
 library(vegan)
 library(forcats)
 library(stringr)
+library(arm)
 
 #log transform IVI
 hist(data$Real.IVI)
@@ -227,4 +228,12 @@ hist(resid(IVI_log)) #residuals are fairly normal, good
 summary(IVI_log)
 plot(IVI_log) #heteroskedastic. idk if thats bad I vaguely know thats whats happening based on a 5 min youtube video i just watched 
 #var(ui|xi)=f(xi) -> variance of errors given xi is some function of xi (depends on xi) -- direction not clear 
+###is that even right? not sure tbf. its blue. someone said that was good. 
 
+
+##stolen code below 
+require(MCMCglmm)
+
+smod<-sim(IVI_log,1000)
+posterior.mode(as.mcmc(smod@fixef))
+HPDinterval(as.mcmc(smod@fixef))
