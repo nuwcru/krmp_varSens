@@ -108,10 +108,46 @@ d %>%
 # Model simulated data ----------------------------------------------------
 library(nlme)
 
-m <- lme(ivi ~ chickage + broodsize + year,   # you can change these, but data was created with this model
+# regular model with no covariance structure
+m1 <- lme(ivi ~ chickage + broodsize,   # you can change these, but data was created with this model
           random = ~ 1|nestID,                # random intercepts for nest
-          weights = varIdent(form= ~ 1|year), # variance dependant on year
           data = d)   
+
+# normalized residuals for the covariates within each year 
+plot(m1, resid(., type = "n") ~ broodsize | year)
+plot(m1, resid(., type = "n") ~ chickage | year)
+
+# residuals clearly differ among years which isn't good
+#     - let's model it again, but allow variance to differ among years
+
+
+
+# regular model _with_ variance dependant on year
+m2 <- lme(ivi ~ chickage:year + broodsize:year,   # you can change these, but data was created with this model
+         random = ~ 1 | nestID,           # random intercepts for nest
+         weights = varIdent(form = ~ 1|year),
+         data = d)   
+
+
+
+
+# same plots as before
+plot(m2, resid(., type = "n") ~ broodsize | year)
+plot(m2, resid(., type = "n") ~ chickage | year)
+
+d$resid1 <- resid(m1, type="normalized") 
+d$fitted1 <- as.vector(m1$fitted[,1])
+d$resid2 <- resid(m2, type="normalized") 
+d$fitted2 <- as.vector(m2$fitted[,2])
+m2$fitted
+
+
+d %>%
+  ggplot() +
+  geom_jitter(aes(x = chickage, y = fitted2)) +            # model fit
+  geom_jitter(aes(x = chickage, y = ivi), colour = red4) + # true data
+  facet_grid(.~year) +
+  theme_nuwcru()
 
 
 # examine fixed effects
@@ -129,15 +165,29 @@ nest_effects
 # estimated
 m$coefficients$random
 
+d$resid <- as.vector(m$residuals[,1])
+d$fitted <- as.vector(m$fitted[,1])
+glimpse(d)
 
-
-
-
-
+d %>%
+  ggplot() +
+  geom_jitter(aes(x = year, y = fitted)) +
+  theme_nuwcru()
 
 ### don't go past here, this is for my own benefit and not ready yet.
 # we may want to use a bayesian framework for the paper, but the above model is sufficient 
 # to get you going and understanding the process
+
+
+
+
+
+
+
+
+
+
+
 
 
 # JAGS --------------------------------------------------------------------
