@@ -142,7 +142,7 @@ m$coefficients$random
 
 # JAGS --------------------------------------------------------------------
 
-# I want to better understand this and hard code the covariance so i understand it better
+# I want to better understand this and hard code the covariance so i get a better feel for it
  # use variance matrix from:
 # http://www.flutterbys.com.au/stats/tut/tut8.2b.html
 
