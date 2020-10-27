@@ -139,7 +139,7 @@ d$resid1 <- resid(m1, type="normalized")
 d$fitted1 <- as.vector(m1$fitted[,1])
 d$resid2 <- resid(m2, type="normalized") 
 d$fitted2 <- as.vector(m2$fitted[,2])
-m2$fitted
+
 
 
 d %>%
@@ -197,13 +197,11 @@ d %>%
 # http://www.flutterbys.com.au/stats/tut/tut8.2b.html
 
 X = model.matrix(~ 1 + chickage + broodsize + year, data = d)
-year = as.factor(2013:2019)
-year_mat = model.matrix(~ year - 1)
+
 
 jags_data <- list(y = d$ivi,                 # ivi
-                  years = 2012:2019, # year identifier for variance
-                  n_years = n_years,         # number of years
-                  nest = d$nestID,           # random intercept for nest
+                  years = as.factor(d$year), # year identifier for variance
+                  nest = as.factor(d$nestID),# random intercept for nest
                   n_nests = n_nests,         # number of nests
                   X = X,                     # intercept + covariates
                   N = N,                     # sample size
@@ -225,9 +223,8 @@ cat("
     
     # Priors ~~~~~~~~~~~~~~~
     
-        for (i in 1:K) {beta[i] ~ dnorm(0,0.001)}
+        for (i in 1:K) {beta[i] ~ dnorm(0,0.001)
         
-        for (i in 1:n_years){
         sigma[i] <- z[i] / sqrt(chSq[i])
         z[i]     ~ dnorm(0, 0.04)I(0,)
         chSq[i]  ~ dgamma(0.5, 0.5)
@@ -260,4 +257,9 @@ het_m1   <- jags(data      = jags_data,
                 n.chains   = 3,
                 n.burnin   = 4000,
                 n.iter     = 5000)
+het_m2 <- update(het_m1, n.iter = 10000, n.thin = 10) 
+het_m3 <- update(het_m2, n.iter = 50000, n.thin = 10) 
 
+
+traceplot(het_m2)
+out <- het_m3$BUGSoutput
