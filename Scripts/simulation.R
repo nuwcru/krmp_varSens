@@ -115,7 +115,7 @@ m <- lme(ivi ~ chickage + broodsize + year,   # you can change these, but data w
 
 
 # examine fixed effects
-# compare these with the beta values we used to create the model
+# estimated fixed effects
 m$coefficients$fixed
 
 # true values (what we used to create the data)
@@ -126,6 +126,7 @@ intercept
 # examine random intercepts
 # true values
 nest_effects
+# estimated
 m$coefficients$random
 
 
