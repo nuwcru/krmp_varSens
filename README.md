@@ -14,7 +14,8 @@ An examination of variance sensitivity among breeding Peregrine Falcons in respo
 │     ├── 
 │     └── 
 ├── Scripts 
-│     ├──   
+│     ├──  simulation.R    <- simulate data to ensure variance is being captured properly by whatever model we use
+│     │                            - nlme model for simplicity / jags for thorough understanding and benefits from bayesian framework
 │     ├── 
 │     └── 
 └── Figures
