@@ -284,11 +284,27 @@ het_mcmc %>%
 
 
 
-sleep_lm_pred = 
+het_d <- 
   het_mcmc[1] %>%
   tidybayes::spread_draws(mu[i], y_pred[i]) %>%
   ungroup() %>%
   left_join(
-    mutate(sleep, i = 1:n())
+    mutate(d, i = 1:n())
   ) %>%
-  mutate(resid = Reaction - mu)
+  mutate(resid = ivi - mu)
+
+
+
+# variance per year is captured
+ggplot(d, aes(x=broodsize, y=ivi)) +
+  tidybayes::stat_lineribbon(data=het_d, aes(y=y_pred), colour = "white") +
+  scale_fill_brewer() + 
+  geom_point(data=d) +
+  facet_wrap(~year) +
+  theme_nuwcru()
+
+het_d %>%
+  ggplot() +
+  geom_point(aes(x = chickage, y = resid)) +
+  facet_wrap(~year) +
+  theme_nuwcru()
