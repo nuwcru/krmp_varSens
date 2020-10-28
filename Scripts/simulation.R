@@ -57,6 +57,8 @@ b2       <- -2    # beta for broodsize
 intercept <- 15   # population mean
 
 # other ways to do this, but I find a loop intuitve since it's generating each observation using the mechanisms we specified
+# similar to ivi ~ 1 + chickage + broodsize + (1|nest) + epsilon_year
+
 for (i in 1:N){ 
       d$ivi[i] <- intercept + d$b0_nest[i] +                  # overall population mean IVI + random intercept for nest
                   b1 * d$chickage[i] + b2 * d$broodsize[i] +  # fixed effects
@@ -219,6 +221,8 @@ cat("
         for (i in 1:N) {
           y[i]  ~ dnorm(mu[i], tau[years[i]])
           mu[i] <- inprod(beta[], X[i,]) + a[nest[i]]
+    
+        y_pred[i] ~ dnorm(mu[i], tau[years[i]])
         }
     
     # Priors ~~~~~~~~~~~~~~~
@@ -246,8 +250,8 @@ sink()
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-#Step 6: Run JAGS
-params <- c("beta", "sigma", "sigma_nest")
+# Store draw information from the folowing parms
+params <- c("beta", "sigma", "a", "sigma_nest", "y_pred", "mu")
 
 het_m1   <- jags(data      = jags_data,
                 inits      = NULL,
@@ -257,9 +261,34 @@ het_m1   <- jags(data      = jags_data,
                 n.chains   = 3,
                 n.burnin   = 4000,
                 n.iter     = 5000)
+
 het_m2 <- update(het_m1, n.iter = 10000, n.thin = 10) 
 het_m3 <- update(het_m2, n.iter = 50000, n.thin = 10) 
+het_m4 <- update(het_m3, n.iter = 50000, n.thin = 10) 
+
+het_mcmc <- as.mcmc(het_m4)
+
+# good mixing for betas, not sure why sigma[8] and [9] are terrible...
+het_mcmc %>%
+  window(thin=10) %>% 
+  tidybayes::gather_draws(beta[i], sigma[i], a[i]) %>%
+  filter(.variable == "beta") %>%
+  ungroup() %>%
+  mutate(term = ifelse(is.na(i), .variable, paste0(.variable,"[",i,"]"))) %>%
+  ggplot(aes(x=.iteration, y=.value, color=as.factor(.chain))) +
+  scale_color_manual(values=c("#461220", "#b23a48", "#fcb9b2")) +
+  geom_line(alpha=0.5) +
+  facet_grid(term~., scale="free_y") +
+  labs(color="chain", x="iteration") +
+  theme_nuwcru()
 
 
-traceplot(het_m2)
-out <- het_m3$BUGSoutput
+
+sleep_lm_pred = 
+  het_mcmc[1] %>%
+  tidybayes::spread_draws(mu[i], y_pred[i]) %>%
+  ungroup() %>%
+  left_join(
+    mutate(sleep, i = 1:n())
+  ) %>%
+  mutate(resid = Reaction - mu)

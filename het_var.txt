@@ -6,6 +6,8 @@
         for (i in 1:N) {
           y[i]  ~ dnorm(mu[i], tau[years[i]])
           mu[i] <- inprod(beta[], X[i,]) + a[nest[i]]
+    
+        y_pred[i] ~ dnorm(mu[i], tau[years[i]])
         }
     
     # Priors ~~~~~~~~~~~~~~~
