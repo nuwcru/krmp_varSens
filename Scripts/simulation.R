@@ -1,5 +1,7 @@
 library(R2jags)
 library(nuwcru)
+library(dplyr)
+library(ggplot2)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ concept ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # maybe a simplification, but my high level understanding of what you want is the following:
@@ -23,22 +25,13 @@ broodsize  <- sample(c(1,2,3,4), replace = TRUE, size = n_nests * n_years)
 broodsize  <- rep(broodsize, each = n_sample)
 
 # random nest intercepts
-nest_effects <- c(-0.51735632,
-                  2.09047711,
-                  0.03626926,
-                  -0.94967298,
-                  1.07797951,
-                  2.66709311,
-                  -0.51708258,
-                  -2.11048553,
-                  0.44702011,
-                  -1.21980210,
-                  0.69325885,
-                  -2.42639331,
-                  2.74158690,
-                  0.01023289,
-                  -2.02312492)
+nest_effects <- c(1.56, -0.037, 5.14, 0.094, -0.38, 3.78, -0.46, 
+                  -1.07, -0.56, 0.33, -2.25,  3.27, 3.24, 1.27, 1.46)
+  
 
+
+eps_sigma <- data.frame(sigma = c(1,5,2,9,3,8,3),
+                        year = as.character(2013:2019))
 
 # combine data for simplicity
 d <- data.frame(nestID    = rep(as.character(1:n_nests), each = n_sample * n_years),
@@ -46,10 +39,9 @@ d <- data.frame(nestID    = rep(as.character(1:n_nests), each = n_sample * n_yea
                 chickage  = chickage,
                 broodsize = broodsize,
                 year      = rep(as.character(2013:2019), each = n_nests * n_sample),
-                eps_mean  = rep(0, length = N),
-                eps_sigma = rep(c(1,3,2,5,3,6,4), each = n_nests * n_sample))
+                eps_sigma = rep(c(1,5,2,9,3,8,3), each = n_nests * n_sample))
 
-head(d)
+d <- d %>% left_join(eps_sigma, by = "year")
 
 # Parameters to be estimated
 b1       <- -1    # beta for chickage
@@ -59,10 +51,10 @@ intercept <- 15   # population mean
 # other ways to do this, but I find a loop intuitve since it's generating each observation using the mechanisms we specified
 # similar to ivi ~ 1 + chickage + broodsize + (1|nest) + epsilon_year
 
-for (i in 1:N){ 
+for (i in 1:nrow(d)){ 
       d$ivi[i] <- intercept + d$b0_nest[i] +                  # overall population mean IVI + random intercept for nest
                   b1 * d$chickage[i] + b2 * d$broodsize[i] +  # fixed effects
-                  rnorm(1, d$eps_mean[i], d$eps_sigma[i])     # draw residuals from year specific distributions
+                  rnorm(1, 0, d$eps_sigma[i] + chickage*0.3)     # draw residuals from year specific distributions
     }
 
   
@@ -71,10 +63,13 @@ for (i in 1:N){
 
 ### yearly variance ~~~~~~~~~~~~~
 boxplot(ivi ~ year, d)
-
+library(tidyverse)
+library(nuwcru)
 # raw points
+
+
 d %>%
-  ggplot() +
+ggplot() +
   geom_jitter(aes(x = year, y = ivi)) +
   xlab("") +
   theme_nuwcru()
@@ -83,7 +78,7 @@ d %>%
 
 
 ### nest specific variance 
-boxplot(ivi ~ nest, d)
+boxplot(ivi ~ nestID, d)
 
 d %>%
   ggplot() +
@@ -98,6 +93,7 @@ d %>%
 d %>% 
   ggplot() +
   geom_jitter(aes(x = chickage, y = ivi)) +
+  facet_wrap(~year) +
   theme_nuwcru()
 
 # broodsize ~ ivi 
@@ -196,7 +192,6 @@ d %>%
 
 # I want to better understand this and hard code the covariance so i get a better feel for it
  # use variance matrix from:
-# http://www.flutterbys.com.au/stats/tut/tut8.2b.html
 
 X = model.matrix(~ 1 + chickage + broodsize + year, data = d)
 
@@ -204,6 +199,7 @@ X = model.matrix(~ 1 + chickage + broodsize + year, data = d)
 jags_data <- list(y = d$ivi,                 # ivi
                   years = as.factor(d$year), # year identifier for variance
                   nest = as.factor(d$nestID),# random intercept for nest
+                  n_years = n_years,
                   n_nests = n_nests,         # number of nests
                   X = X,                     # intercept + covariates
                   N = N,                     # sample size
@@ -227,22 +223,23 @@ cat("
     
     # Priors ~~~~~~~~~~~~~~~
     
-        for (i in 1:K) {beta[i] ~ dnorm(0,0.001)
+        for (i in 1:K) {beta[i] ~ dnorm(0,0.001)}
         
-        sigma[i] <- z[i] / sqrt(chSq[i])
-        z[i]     ~ dnorm(0, 0.04)I(0,)
+        for (i in 1:n_years){
         chSq[i]  ~ dgamma(0.5, 0.5)
+        z[i]     ~ dnorm(0, 0.04)I(0,)
+        sigma[i] <- z[i] / sqrt(chSq[i])
         tau[i]   <- pow(sigma[i], -2)
         }
 
     
     # prior for random intercept
-        for (i in 1:n_nests) {a[i] ~ dnorm(0, tau_nest)}
+        for (i in 1:n_nests) {a[i] ~ dnorm(a_bar, sigma_nest)}
     
     # prior for variance of random intercept
-        sigma_nest ~ dunif(0,5)
-        tau_nest <- 1 / (sigma_nest * sigma_nest)
-
+        a_bar ~ dnorm(0, 1.5)
+        sigma_nest ~ dexp(1)
+        
     }
 ", fill = TRUE)
 sink()
@@ -268,11 +265,20 @@ het_m4 <- update(het_m3, n.iter = 50000, n.thin = 10)
 
 het_mcmc <- as.mcmc(het_m4)
 
-# good mixing for betas, not sure why sigma[8] and [9] are terrible...
+
+## True Values
+b1            # beta for chickage
+b2            # beta for broodsize
+intercept     # population mean
+nest_effects  # random intercepts
+eps_sigma     # yearly residual sd
+
+
+# good mixing
 het_mcmc %>%
   window(thin=10) %>% 
   tidybayes::gather_draws(beta[i], sigma[i], a[i]) %>%
-  filter(.variable == "beta") %>%
+  filter(.variable == "sigma") %>%
   ungroup() %>%
   mutate(term = ifelse(is.na(i), .variable, paste0(.variable,"[",i,"]"))) %>%
   ggplot(aes(x=.iteration, y=.value, color=as.factor(.chain))) +
@@ -284,27 +290,20 @@ het_mcmc %>%
 
 
 
-het_d <- 
-  het_mcmc[1] %>%
-  tidybayes::spread_draws(mu[i], y_pred[i]) %>%
-  ungroup() %>%
-  left_join(
-    mutate(d, i = 1:n())
-  ) %>%
-  mutate(resid = ivi - mu)
+het_d <- het_mcmc[1] %>%
+          tidybayes::spread_draws(mu[i], y_pred[i]) %>%
+          ungroup() %>%
+          left_join(
+            mutate(d, i = 1:n())) %>%
+          mutate(resid = ivi - mu)
 
 
 
 # variance per year is captured
-ggplot(d, aes(x=broodsize, y=ivi)) +
-  tidybayes::stat_lineribbon(data=het_d, aes(y=y_pred), colour = "white") +
+ggplot(d, aes(x=chickage, y=ivi)) +
+  tidybayes::stat_lineribbon(data=het_d, aes(y=y_pred), colour = "#08519C") +
   scale_fill_brewer() + 
   geom_point(data=d) +
   facet_wrap(~year) +
   theme_nuwcru()
 
-het_d %>%
-  ggplot() +
-  geom_point(aes(x = chickage, y = resid)) +
-  facet_wrap(~year) +
-  theme_nuwcru()

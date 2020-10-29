@@ -1,0 +1,13 @@
+\begin{aligned}
+y_{i} & \sim N\left(\mu_{i}, \tau \times 1 / X_{i}\right) \\
+\mu_{i} &=\beta_{0}+ \alpha_{nest[i]} + \beta (chickage_{i})+\beta(broodsize_{i}) \\
+\alpha_{j} & \sim N(\bar{\alpha}, \sigma_{nest})\\
+\bar{\alpha} & \sim N(0, 1.5)\\
+\sigma_{nest} & \sim Exponential(1)\\
+\beta_{0} & \sim N(0,1.0 E-6) \\
+\beta_{j} & \sim N(0,1.0 E-6) \\
+\sigma &=z / \sqrt{\chi} \\
+z & \sim N(0,0.04) I(0,) \\
+\chi & \sim \Gamma(0.5,0.5) \\
+\tau &=\sigma^{-2}
+\end{aligned}
