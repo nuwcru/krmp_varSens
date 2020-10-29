@@ -274,6 +274,8 @@ nest_effects  # random intercepts
 eps_sigma     # yearly residual sd
 
 
+# * assess model ----------------------------------------------------------
+
 # good mixing
 het_mcmc %>%
   window(thin=10) %>% 
