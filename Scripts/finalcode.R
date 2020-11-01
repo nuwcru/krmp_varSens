@@ -11,7 +11,7 @@ library(vegan)
 library(forcats)
 library(stringr)
 library(arm)
-
+library(dplyr)
 #log transform IVI
 hist(data$Real.IVI)
 data$logIVI <- log(data$Real.IVI)
@@ -237,3 +237,29 @@ require(MCMCglmm)
 smod<-sim(IVI_log,1000)
 posterior.mode(as.mcmc(smod@fixef))
 HPDinterval(as.mcmc(smod@fixef))
+
+
+
+
+#####actual model attempts
+
+only_unsupp$site <- as.factor(only_unsupp$site) 
+only_unsupp$yearsite <- as.factor(only_unsupp$yearsite)
+
+
+ctrl <- lmeControl(opt="optim");
+a1<- lme(logIVI ~ chickage:year + chicks:year,   
+          random = list (site=~1, yearsite=~1),           
+          weights = varIdent(form = ~ 1|year),
+          control=ctrl, #this was to fix the error message -> nlminb problem, convergence error code = 1 message = iteration limit reached without convergence (10)
+          data = only_unsupp, 
+         na.action=na.exclude) #this was to fix the error message -> Error in na.fail.default(list(year = c(2015L, 2015L, 2015L, 2015L, 2015L,  :missing values in object
+summary(a1)
+anova(a1)
+
+#it works... not 100% sure if it works in the way we want it to but it made numbers 
+
+
+##Qus so i remember to ask them later:
+#should we be including the camera settings in this model
+#why does it present chickage:year but year:chicks (opposite order)
