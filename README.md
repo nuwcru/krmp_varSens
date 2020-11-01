@@ -58,7 +58,7 @@ The variance structure is a bit hard to follow with all the priors, but what we'
   <img width="200" src="https://github.com/nuwcru/krmp_varSens/blob/master/documents/small.png">
 </p>
 
-Where ```w``` is a weighting matrix, where the weights associated with each year are determined by the inverse of the ratio of each year to the first (reference) group.
+```w``` is a weighting matrix, where the weights associated with each year are determined by the inverse of the ratio of each year to the first (reference) group.
 
 All paramters and associated priors (all diffuse):
 
