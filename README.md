@@ -102,6 +102,10 @@ And the JAGS model (for simplicity, all betas are packaged in a matrix together,
     }
 ```
 
+Real IVI values plotted as points, mean predicted value from jags model, and credible intervals surrounding the mean. X axis is chickage.
+<p align="left">
+  <img width="800" src="https://github.com/nuwcru/krmp_varSens/blob/master/documents/yearly_variance.png">
+</p>
 
 
 
