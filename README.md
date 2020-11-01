@@ -67,7 +67,7 @@ All paramters and associated priors (all diffuse):
 </p>
 
 
-And the JAGS model:
+And the JAGS model (for simplicity, all betas are packaged in a matrix together, and so are the covariate vectors):
 
 ```model{
     
