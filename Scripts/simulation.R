@@ -70,11 +70,11 @@ library(nuwcru)
 
 d %>%
 ggplot() +
-  geom_jitter(aes(x = year, y = ivi)) +
+  geom_jitter(aes(x = year, y = ivi) ) +
   xlab("") +
   theme_nuwcru()
 
-
+?geom_jitter
 
 
 ### nest specific variance 
