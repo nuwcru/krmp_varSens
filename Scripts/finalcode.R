@@ -263,3 +263,15 @@ anova(a1)
 ##Qus so i remember to ask them later:
 #should we be including the camera settings in this model
 #why does it present chickage:year but year:chicks (opposite order)
+
+
+#with cam settings 
+a2<- lme(logIVI ~ chickage:year + chicks:year +motion +trigger,   
+         random = list (site=~1, yearsite=~1),           
+         weights = varIdent(form = ~ 1|year),
+         control=ctrl, #this was to fix the error message -> nlminb problem, convergence error code = 1 message = iteration limit reached without convergence (10)
+         data = only_unsupp, 
+         na.action=na.exclude) #this was to fix the error message -> Error in na.fail.default(list(year = c(2015L, 2015L, 2015L, 2015L, 2015L,  :missing values in object
+summary(a2)
+anova(a2)
+
