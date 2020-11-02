@@ -70,11 +70,11 @@ library(nuwcru)
 
 d %>%
 ggplot() +
-  geom_jitter(aes(x = year, y = ivi)) +
+  geom_jitter(aes(x = year, y = ivi) ) +
   xlab("") +
   theme_nuwcru()
 
-
+?geom_jitter
 
 
 ### nest specific variance 
@@ -274,6 +274,8 @@ nest_effects  # random intercepts
 eps_sigma     # yearly residual sd
 
 
+# * assess model ----------------------------------------------------------
+
 # good mixing
 het_mcmc %>%
   window(thin=10) %>% 
@@ -301,9 +303,21 @@ het_d <- het_mcmc[1] %>%
 
 # variance per year is captured
 ggplot(d, aes(x=chickage, y=ivi)) +
-  tidybayes::stat_lineribbon(data=het_d, aes(y=y_pred), colour = "#08519C") +
+  tidybayes::stat_lineribbon(data=het_d, aes(y=ivi), colour = "#08519C") +
   scale_fill_brewer() + 
   geom_point(data=d) +
   facet_wrap(~year) +
-  theme_nuwcru()
+  ylab("") + xlab("") +
+  theme_nuwcru() + facet_nuwcru() +
+  theme(panel.border = element_blank(), axis.line.y = element_blank(), axis.line.x = element_blank(), 
+        axis.text.x = element_blank(),axis.text.y = element_blank(), axis.ticks.x = element_blank(), 
+        axis.ticks.y = element_blank())
+
+
+facet_nuwcru <- function(){
+  theme(
+    strip.text.x = element_text(size = 10, color = grey2),
+    strip.text.y = element_text(size = 10, color = grey2),
+    strip.background = element_blank())
+}
 
