@@ -1,7 +1,7 @@
 dir= "G:/My Drive/Rebekah thesis/Clean Provisioning Data"
 setwd(dir)
 
-data <- read.csv("G:/My Drive/Rebekah thesis/Clean Provisioning Data/11.09.2020/Clean IVI years 2013-2019.csv")
+data <- read.csv("data/Clean IVI years 2013-2019.csv")
 
 library(tidyr)
 library(dplyr)
@@ -242,26 +242,49 @@ HPDinterval(as.mcmc(smod@fixef))
 
 
 #####actual model attempts
-
+library(nlme)
 only_unsupp$site <- as.factor(only_unsupp$site) 
 only_unsupp$yearsite <- as.factor(only_unsupp$yearsite)
 
 
+
+# You originally had year as a "number", so it was literally multiplying
+  # the number of chicks by 2,013 for the year 2013. That's why it wasn't
+  # converging properly. Here we convert it, and put it back in the model.
+  # you'll see the output is much different.
+only_unsupp$year_f <- as.factor(only_unsupp$year)
+
 ctrl <- lmeControl(opt="optim");
-a1<- lme(logIVI ~ chickage:year + chicks:year,   
+a1<- lme(logIVI ~ chickage:year_f + chicks:year_f,   
           random = list (site=~1, yearsite=~1),           
-          weights = varIdent(form = ~ 1|year),
+          weights = varIdent(form = ~ 1|year_f),
           control=ctrl, #this was to fix the error message -> nlminb problem, convergence error code = 1 message = iteration limit reached without convergence (10)
           data = only_unsupp, 
          na.action=na.exclude) #this was to fix the error message -> Error in na.fail.default(list(year = c(2015L, 2015L, 2015L, 2015L, 2015L,  :missing values in object
 summary(a1)
 anova(a1)
 
+# plot residuals. You don't want to see any patterns here. Looks relatively ok
+plot(a1, resid(., type = "n") ~ chickage | year)
+plot(a1, resid(., type = "n") ~ chicks | year)
+
+
+
+# ok, so your model is working. It's a pretty heavy model parameter-wise, interactions
+  # with factors are always heavy, but it's still working.
+
+
+
+
+
+
 #it works... not 100% sure if it works in the way we want it to but it made numbers 
+
 
 
 ##Qus so i remember to ask them later:
 #should we be including the camera settings in this model
+  # I think this is up to you and kim to decide. I can try and explore the effects of camera settings some more before dumpi
 #why does it present chickage:year but year:chicks (opposite order)
 
 
