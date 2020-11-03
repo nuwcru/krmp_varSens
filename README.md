@@ -143,6 +143,7 @@ Real logIVI values are plotted as points, and the relationship with the respecti
 
 <br />
 <br />
+
 ## Next steps
 * directions from Kim resulting from meeting 
 * convert IVI to original scale so we can more intuitively interpret results. Change distribution to lognormal or gamma to handle original scale
