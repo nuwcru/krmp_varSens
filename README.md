@@ -94,7 +94,7 @@ For the sake of brevity, I won't show diagnostic plots, but mixing went relative
 
 ## Sigma - yearly residual variance
 
-logIVI ~ N(mu_i, sigma^2_year)
+logIVI_i ~ N(mu_i, sigma^2_year)
 
 Below we're plotting the estimated sigma (+/- credibles) as a ratio to the reference group which is 2013 in this case. 
 
