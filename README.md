@@ -142,6 +142,20 @@ Real logIVI values are plotted as points, and the relationship with the respecti
 
 <br />
 <br />
+
+### Thoughts
+
+```
+How do you know that your model is right? 
+When the residuals contain no information.  
+
+How do you know that your model is good enough?  
+When the residuals contain no information _that you can resolve_.
+```
+- [Box and Tiao](https://www.amazon.ca/Bayesian-Inference-Statistical-Analysis-George/dp/0471574287)
+
+I think there's still some information in the residuals that we can model - which may be a good opportunity to introduce yearly environmental conditions.
+
 <br />
 
 # Simulations
