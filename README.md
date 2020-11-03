@@ -14,13 +14,17 @@ Investigating variance sensitivity among breeding Peregrine Falcons in response 
 │     ├── 
 │     └── 
 ├── Scripts 
-│     ├──  simulation.R    <- simulate data to ensure variance is being captured properly by whatever model we use
+│     ├──  simulation.R         <- simulate data to ensure variance is being captured properly by whatever model we use
 │     │                            - nlme model for simplicity / jags for thorough understanding and benefits from bayesian framework
-│     ├── 
-│     └── 
+│     ├──  jags.R               <- Real Data using similar model structure to that tested in simulation.R
+│     └──  ivi_scratch.R        <- Programmatically calculate IVI
 └── Figures
-      ├── 
-      └── 
+      ├── beta_chickage.jpg     <- from jags.R - het resid variance by year
+      ├── betas_broodsize.jpg   <- from jags.R - het resid variance by year
+      ├── betas_broodsize.jpg   <- from jags.R - het resid variance by year
+      ├── sigma_CIs.jpg         <- from jags.R - het resid variance by year
+      ├── chickage-year.jpg     <- from jags.R - het resid variance by year
+      └──  broodsize-year.jpg   <- from jags.R - het resid variance by year
 
 ```
 
