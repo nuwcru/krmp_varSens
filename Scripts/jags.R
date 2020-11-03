@@ -164,13 +164,15 @@ ggplot(only_unsupp, aes(x=chickage, y=logIVI)) +
     theme(panel.border = element_blank(), axis.line.y = element_blank(), axis.line.x = element_blank(), 
           axis.text.x = element_blank(),axis.text.y = element_blank(), axis.ticks.x = element_blank(), 
           axis.ticks.y = element_blank())
+display.brewer.pal(n = 3)
+
 
 ggplot(only_unsupp, aes(x=chicks, y=logIVI)) +
     tidybayes::stat_lineribbon(data=het_d, aes(y=y_pred), colour = "#08519C") +
     scale_fill_brewer() + 
     geom_point(alpha = 0.5) +
     facet_wrap(~year) +
-    ylab("log IVI") + xlab("Chickage") +
+    ylab("log IVI") + xlab("brood size") +
     theme_nuwcru() + facet_nuwcru() +
     theme(panel.border = element_blank(), axis.line.y = element_blank(), axis.line.x = element_blank(), 
           axis.text.x = element_blank(),axis.text.y = element_blank(), axis.ticks.x = element_blank(), 
@@ -182,15 +184,26 @@ het_mcmc[1] %>%
     tidybayes::spread_draws(sigma[i]) %>%
     group_by(i) %>%
     summarize(mean = mean(sigma), sd = sd(sigma)) %>%
-    mutate(upper = mean + (1.96 * sd), lower = mean - (1.96 * sd)) %>%
+    mutate(upper95 = mean + (1.96 * sd), lower95 = mean - (1.96 * sd),
+           upper80 = mean + (1.282 * sd), lower80 = mean - (1.282 * sd),
+           upper50 = mean + (0.674 * sd), lower50 = mean - (0.674 * sd)) %>%
     ggplot() +
-    geom_vline(xintercept = 1, colour = grey7, linetype = "dashed") +
-    geom_segment(aes(x = lower, xend = upper, 
-                     y = c(2013, 2014, 2015, 2016, 2017, 2018, 2019), yend = c(2013, 2014, 2015, 2016, 2017, 2018, 2019)), colour = grey6, size = 1) +
-    geom_point(aes(y = c(2013, 2014, 2015, 2016, 2017, 2018, 2019), x = mean), shape = 21, fill = "white", colour = "black", size = 2)+
+    geom_hline(yintercept = c(2013, 2014, 2015, 2016, 2017, 2018, 2019), colour = grey8, alpha = 0.5) +
+    geom_vline(xintercept = 1, colour = grey6, linetype = "dashed") +
+    geom_segment(aes(x = lower95, xend = upper95, 
+                     y = c(2013, 2014, 2015, 2016, 2017, 2018, 2019), yend = c(2013, 2014, 2015, 2016, 2017, 2018, 2019)), colour = "#DFEBF7", size = 2) +
+    geom_segment(aes(x = lower80, xend = upper80, 
+                     y = c(2013, 2014, 2015, 2016, 2017, 2018, 2019), yend = c(2013, 2014, 2015, 2016, 2017, 2018, 2019)), colour = "#A5CADF", size = 2) +
+    geom_segment(aes(x = lower50, xend = upper50, 
+                     y = c(2013, 2014, 2015, 2016, 2017, 2018, 2019), yend = c(2013, 2014, 2015, 2016, 2017, 2018, 2019)), colour = "#4A84BD", size = 2) +
+    geom_point(aes(y = c(2013, 2014, 2015, 2016, 2017, 2018, 2019), x = mean), shape = 21, fill = "white", colour = "black", size = 4)+
     ylab("") + xlab("Sigma yearly estimate (95% CI)") +
-    geom_text(aes(x = 0.7, y = 2018.5, label = ))
     scale_x_continuous(limits = c(0.7,1.3)) +
     scale_y_continuous(breaks = 2013:2019) +
-    theme_nuwcru()
+    theme_nuwcru() + 
+    theme(panel.border = element_blank(),
+          #axis.line.x = element_blank(),
+          axis.line.y = element_blank(),
+          axis.ticks.y = element_blank())
+    
 

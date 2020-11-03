@@ -19,17 +19,22 @@ d$date_filled_end <- ymd_hms(paste(d$date, d$filled_end))
 d <- d %>% arrange(site, date)
 
 # split dataframe into lists based on the yearsite
-x <- d %>% mutate(ivi = as.numeric(rep(NA, nrow(d)))) %>% group_split(yearsite)
+yearsite_list <- d %>% mutate(ivi = as.numeric(rep(NA, nrow(d)))) %>% group_split(yearsite)
           
 # loop through the list of yearsite dataframes, subtract start time from the end of the previous prey delivery    
-for (j in 1:length(x)){
-  for (i in 2:nrow(x[[j]])){
-    x[[j]][i, "ivi"] <- as.numeric(x[[j]][i, "date_start"] - x[[j]][i-1, "date_filled_end"])
+for (i in 1:length(yearsite_list)){
+  for (j in 2:nrow(yearsite_list[[i]])){
+    yearsite_list[[i]][j, "ivi"] <- as.numeric(yearsite_list[[i]][j, "date_start"] - yearsite_list[[i]][j-1, "date_filled_end"])
   }
 }
 
+# this is all good, but the amount of time that ellapses between feedings is likely dependant
+# on how much was fed. If we a massive brunch, we likely won't have to eat again until supper
+# It could appear that some parents aren't able to provision well because they have large IVI's,
+# but maybe it's because they're consistently feeding more food each time (larger prey etc.). 
+
 # collapse list
-d <- bind_rows(x)
+d <- bind_rows(yearsite_list)
 d %>% filter(ivi < 0) %>% dplyr::select(site, yearsite, date_start, date_filled_end, ivi)
 
 view <- d %>% filter(site == 1 & month(date) == 8)
