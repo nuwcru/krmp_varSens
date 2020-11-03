@@ -192,8 +192,14 @@ d %>%
 
 # I want to better understand this and hard code the covariance so i get a better feel for it
  # use variance matrix from:
+a1<- lme(logIVI ~ chickage:year + chicks:year,   
+         random = list (site=~1, yearsite=~1),           
+         weights = varIdent(form = ~ 1|year),
+         control=ctrl, #this was to fix the error message -> nlminb problem, convergence error code = 1 message = iteration limit reached without convergence (10)
+         data = only_unsupp, 
+         na.action=na.exclude) 
 
-X = model.matrix(~ 1 + chickage + broodsize + year, data = d)
+X = model.matrix(~ 1 + chickage:year + chicks:year, data = only_unsupp)
 
 
 jags_data <- list(y = d$ivi,                 # ivi

@@ -256,13 +256,29 @@ only_unsupp$year_f <- as.factor(only_unsupp$year)
 
 ctrl <- lmeControl(opt="optim");
 a1<- lme(logIVI ~ chickage:year_f + chicks:year_f,   
+          random = ~ 1 | yearsite / site,           
+          weights = varIdent(form = ~ 1|year_f),
+          control=ctrl, #this was to fix the error message -> nlminb problem, convergence error code = 1 message = iteration limit reached without convergence (10)
+          data = only_unsupp, 
+         na.action=na.exclude) #this was to fix the error message -> Error in na.fail.default(list(year = c(2015L, 2015L, 2015L, 2015L, 2015L,  :missing values in object
+a2<- lme(logIVI ~ chickage:year_f + chicks:year_f,   
           random = list (site=~1, yearsite=~1),           
           weights = varIdent(form = ~ 1|year_f),
           control=ctrl, #this was to fix the error message -> nlminb problem, convergence error code = 1 message = iteration limit reached without convergence (10)
           data = only_unsupp, 
          na.action=na.exclude) #this was to fix the error message -> Error in na.fail.default(list(year = c(2015L, 2015L, 2015L, 2015L, 2015L,  :missing values in object
-summary(a1)
-anova(a1)
+a3<- lme(logIVI ~ chickage:year_f + chicks:year_f,   
+          random = list (site=~1, yearsite=~1),           
+          control=ctrl, #this was to fix the error message -> nlminb problem, convergence error code = 1 message = iteration limit reached without convergence (10)
+          data = only_unsupp, 
+         na.action=na.exclude) #this was to fix the error message -> Error in na.fail.default(list(year = c(2015L, 2015L, 2015L, 2015L, 2015L,  :missing values in object
+a4 <- lme(logIVI ~ chickage + chicks + year_f,   
+          random = list (site=~1, yearsite=~1),   
+          weights = varIdent(form = ~ 1|year_f),
+          data = only_unsupp, 
+         na.action=na.exclude) #this was to fix the error message -> Error in na.fail.default(list(year = c(2015L, 2015L, 2015L, 2015L, 2015L,  :missing values in object
+summary(a4)
+anova(a1, a2, a3, a4)
 
 # plot residuals. You don't want to see any patterns here. Looks relatively ok
 plot(a1, resid(., type = "n") ~ chickage | year)

@@ -5,7 +5,7 @@
     
         for (i in 1:N) {
           y[i]  ~ dnorm(mu[i], tau[years[i]])
-          mu[i] <- inprod(beta[], X[i,]) + a[nest[i]]
+          mu[i] <- inprod(beta[], X[i,]) + a[nest[i]] + g[yearsite[i]]
     
         y_pred[i] ~ dnorm(mu[i], tau[years[i]])
         }
@@ -24,10 +24,13 @@
     
     # prior for random intercept
         for (i in 1:n_nests) {a[i] ~ dnorm(a_bar, sigma_nest)}
+        for (i in 1:n_yearsites) {g[i] ~ dnorm(g_bar, sigma_yearsite)}
     
     # prior for variance of random intercept
         a_bar ~ dnorm(0, 1.5)
         sigma_nest ~ dexp(1)
+        g_bar ~ dnorm(0, 1.5)
+        sigma_yearsite ~ dexp(1)
         
     }
 
