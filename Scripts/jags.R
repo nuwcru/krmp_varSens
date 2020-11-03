@@ -153,7 +153,8 @@ het_d <- het_mcmc %>%
 
 
 
-# log ivi
+# log ivi ~ chickage
+# dimension exported: 1200 x 804
 ggplot(only_unsupp, aes(x=chickage, y=logIVI)) +
     tidybayes::stat_lineribbon(data=het_d, aes(y=y_pred), colour = "#08519C") +
     scale_fill_brewer() + 
@@ -166,7 +167,8 @@ ggplot(only_unsupp, aes(x=chickage, y=logIVI)) +
           axis.ticks.y = element_blank())
 display.brewer.pal(n = 3)
 
-
+# log ivi ~ broodsize
+# dimension exported: 1200 x 804
 ggplot(only_unsupp, aes(x=chicks, y=logIVI)) +
     tidybayes::stat_lineribbon(data=het_d, aes(y=y_pred), colour = "#08519C") +
     scale_fill_brewer() + 
@@ -180,6 +182,7 @@ ggplot(only_unsupp, aes(x=chicks, y=logIVI)) +
 
 
 # Sigma as a ratio to 2013 (reference)
+# dimension exported: 1200 x 804
 het_mcmc[1] %>%
     tidybayes::spread_draws(sigma[i]) %>%
     group_by(i) %>%
