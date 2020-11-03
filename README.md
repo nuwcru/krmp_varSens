@@ -26,7 +26,7 @@ Investigating variance sensitivity among breeding Peregrine Falcons in response 
 
 # Heterogenous residual variance by year
 
-
+The code for this model is in ```scripts/jags.R```
 ## Model
 ```
     # Likelihood ~~~~~~~~~~~~~
