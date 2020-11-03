@@ -30,6 +30,20 @@ Investigating variance sensitivity among breeding Peregrine Falcons in response 
 
 # Heterogenous residual variance by year
 
+``` 
+How do you know that your model is right? 
+When the residuals contain no information.  
+
+How do you know that your model is good enough?  
+When the residuals contain no information that you can resolve.
+
+-box and tiao
+```
+
+<br />
+
+<br />
+
 The code for this model is in ```scripts/jags.R```
 
 ```r
@@ -104,7 +118,7 @@ Kim, the model output is converted to an mcmc object in the script, which I thin
 
 logIVI_i ~ N(mu_i, sigma^2_year)
 
-Below we're plotting the estimated sigma (+/- credibles) as a ratio to the reference group which is 2013 in this case. Estimates to the right of 1 (dashed line) had greater residual variance than 2013. Estimates to the left had less residual variance.
+Below we're plotting the estimated sigma (+/- credibles) as a ratio to the reference group which is 2013 in this case. Estimates to the right of 1 (dashed line) had greater residual variance than 2013. Estimates to the left had less residual variance. Some interesting results, maybe we can explore different ways of modeling these residuals. Still model them at the yearly level, but instead of using year, generate a metric that summarizes the yearly conditions. This may be more informative and match residual variance patterns better than a binned category like year.
 
 <p align="center">
   <img width="800" src="https://github.com/nuwcru/krmp_varSens/blob/master/Figures/sigma_CIs.jpeg">
