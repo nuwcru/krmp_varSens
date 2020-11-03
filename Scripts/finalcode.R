@@ -245,56 +245,142 @@ HPDinterval(as.mcmc(smod@fixef))
 library(nlme)
 only_unsupp$site <- as.factor(only_unsupp$site) 
 only_unsupp$yearsite <- as.factor(only_unsupp$yearsite)
-
-
-
-# You originally had year as a "number", so it was literally multiplying
-  # the number of chicks by 2,013 for the year 2013. That's why it wasn't
-  # converging properly. Here we convert it, and put it back in the model.
-  # you'll see the output is much different.
-only_unsupp$year_f <- as.factor(only_unsupp$year)
+only_unsupp$year <- as.factor(only_unsupp$year)
 
 ctrl <- lmeControl(opt="optim");
-a1<- lme(logIVI ~ chickage:year_f + chicks:year_f,   
+a1<- lme(logIVI ~ chickage:year + chicks:year,   
           random = list (site=~1, yearsite=~1),           
-          weights = varIdent(form = ~ 1|year_f),
+          weights = varIdent(form = ~ 1|year),
           control=ctrl, #this was to fix the error message -> nlminb problem, convergence error code = 1 message = iteration limit reached without convergence (10)
           data = only_unsupp, 
          na.action=na.exclude) #this was to fix the error message -> Error in na.fail.default(list(year = c(2015L, 2015L, 2015L, 2015L, 2015L,  :missing values in object
 summary(a1)
 anova(a1)
 
-# plot residuals. You don't want to see any patterns here. Looks relatively ok
-plot(a1, resid(., type = "n") ~ chickage | year)
-plot(a1, resid(., type = "n") ~ chicks | year)
 
-
-
-# ok, so your model is working. It's a pretty heavy model parameter-wise, interactions
-  # with factors are always heavy, but it's still working.
-
-
-
-
-
-
-#it works... not 100% sure if it works in the way we want it to but it made numbers 
-
-
-
-##Qus so i remember to ask them later:
-#should we be including the camera settings in this model
-  # I think this is up to you and kim to decide. I can try and explore the effects of camera settings some more before dumpi
-#why does it present chickage:year but year:chicks (opposite order)
-
-
-#with cam settings 
-a2<- lme(logIVI ~ chickage:year + chicks:year +motion +trigger,   
+ctrl <- lmeControl(opt="optim");
+a2<- lme(logIVI ~ chickage + chicks+ year,    
          random = list (site=~1, yearsite=~1),           
          weights = varIdent(form = ~ 1|year),
          control=ctrl, #this was to fix the error message -> nlminb problem, convergence error code = 1 message = iteration limit reached without convergence (10)
          data = only_unsupp, 
          na.action=na.exclude) #this was to fix the error message -> Error in na.fail.default(list(year = c(2015L, 2015L, 2015L, 2015L, 2015L,  :missing values in object
 summary(a2)
-anova(a2)
 
+
+ctrl <- lmeControl(opt="optim");
+a3<- lme(logIVI ~ chickage:year + chicks:year,   
+         random = list (site=~1, yearsite=~1),           
+         control=ctrl, #this was to fix the error message -> nlminb problem, convergence error code = 1 message = iteration limit reached without convergence (10)
+         data = only_unsupp, 
+         na.action=na.exclude) #this was to fix the error message -> Error in na.fail.default(list(year = c(2015L, 2015L, 2015L, 2015L, 2015L,  :missing values in object
+summary(a3)
+
+
+anova(a1, a3)
+
+
+#with cam settings 
+a4<- lme(logIVI ~ chickage:year + chicks:year +trigger,   
+         random = list (site=~1, yearsite=~1),           
+         weights = varIdent(form = ~ 1|year),
+         control=ctrl, #this was to fix the error message -> nlminb problem, convergence error code = 1 message = iteration limit reached without convergence (10)
+         data = only_unsupp, 
+         na.action=na.exclude) #this was to fix the error message -> Error in na.fail.default(list(year = c(2015L, 2015L, 2015L, 2015L, 2015L,  :missing values in object
+summary(a4)
+anova(a4)
+
+
+
+##USE THIS ONE :)
+
+a5<- lme(logIVI ~ -1+chickage:year + chicks:year,   
+         random = ~1|site/yearsite,          
+         weights = varIdent(form = ~ 1|year),
+         data = only_unsupp, 
+         na.action=na.exclude) 
+summary(a5)
+anova(a5)
+
+# plot residuals
+plot(a5, resid(., type = "n") ~ chickage | year)
+plot(a5, resid(., type = "n") ~ chicks | year)
+
+
+
+
+##indep years
+y2019 <- subset(only_unsupp, only_unsupp$year=="2019")
+y2018 <- subset(only_unsupp, only_unsupp$year=="2018")
+y2017 <- subset(only_unsupp, only_unsupp$year=="2017")
+y2016 <- subset(only_unsupp, only_unsupp$year=="2016")
+y2015 <- subset(only_unsupp, only_unsupp$year=="2015")
+y2014 <- subset(only_unsupp, only_unsupp$year=="2014")
+y2013 <- subset(only_unsupp, only_unsupp$year=="2013")
+  
+
+y2013<- lme(logIVI ~ -1+chickage + chicks,   
+         random = ~1|site,          
+         data = y2013, 
+         na.action=na.exclude) 
+summary(y2013)
+anova(y2013)
+
+y2014<- lme(logIVI ~ -1+chickage + chicks,   
+            random = ~1|site,          
+            data = y2014, 
+            na.action=na.exclude) 
+summary(y2014)
+anova(y2014)
+
+y2015<- lme(logIVI ~ -1+chickage + chicks,   
+            random = ~1|site,          
+            data = y2015, 
+            na.action=na.exclude) 
+summary(y2015)
+anova(y2015)
+
+y2016<- lme(logIVI ~ -1+chickage + chicks,   
+            random = ~1|site,          
+            data = y2016, 
+            na.action=na.exclude) 
+summary(y2016)
+anova(y2016)
+
+y2017<- lme(logIVI ~ -1+chickage + chicks,   
+            random = ~1|site,          
+            data = y2017, 
+            na.action=na.exclude) 
+summary(y2017)
+anova(y2017)
+
+y2018<- lme(logIVI ~ -1+chickage + chicks,   
+            random = ~1|site,          
+            data = y2018, 
+            na.action=na.exclude) 
+summary(y2018)
+anova(y2018)
+
+y2019<- lme(logIVI ~ -1+chickage + chicks,   
+            random = ~1|site,          
+            data = y2019, 
+            na.action=na.exclude) 
+summary(y2019)
+anova(y2019)
+
+
+
+
+###graphs - playing 
+
+IVIA <- ggplot(data=only_unsupp, aes(x=chickage, y=logIVI)) +
+  geom_point(aes(colour=year)) +
+  stat_smooth(method="lm", se= TRUE,formula=y~x) +
+  facet_wrap(~year)
+print(IVIA)
+
+IVIB <- ggplot(data=only_unsupp, aes(x=chicks, y=logIVI)) +
+  geom_point(aes(colour=year)) +
+  stat_smooth(method="lm", se= TRUE,formula=y~x) +
+  facet_wrap(~year)
+print(IVIB)
