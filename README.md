@@ -45,7 +45,7 @@ The code for this model is in ```scripts/jags.R```
 
 The model output can be downloaded [here](https://drive.google.com/drive/u/1/folders/1o5wTrdWk1oPJiT3bAa7JP3bLc7U4etKl), and can be loaded with:
 ```r
-load("Models/het_mcmc_m3.rda") 
+het_mcmc <- load("Models/het_mcmc_m3.rda") 
 ``` 
 or whatever the particular path is on your computer. This way you don't have to run the jags model.
 
@@ -107,7 +107,7 @@ jags_data <- list(y = only_unsupp$logIVI,     # ivi
 
 For the sake of brevity, I won't show diagnostic plots, but mixing went relatively well. Random intercepts struggled a little, so I'll have to look at that, and the intercept wasn't great. Everything else was good though. I'm using a very similar model structure to the one posted in the simulation section at the bottom of this page. That model estimated my simulated parameters values accurately.
 
-Kim, the model output is converted to an mcmc object in the script, which I think is similar to what MCMCglmm produces. So if you have a particular workflow with model diagnostics/plotting you like, it should transfer over.
+Kim, the model output is converted to an mcmc object in the script, which I think is similar to what MCMCglmm produces. So if you have a particular workflow with model diagnostics/plotting you like, it should transfer over. You can download the rda file here: [link](https://drive.google.com/drive/u/1/folders/1o5wTrdWk1oPJiT3bAa7JP3bLc7U4etKl), and load it with ``` model <- load("path/to/file/het_mcmc_m3.rda) ```.
 
 <br />
 
