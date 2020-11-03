@@ -15,12 +15,13 @@ nestID <- as.factor(only_unsupp$site)
 n_nests <- length(levels(nestID))
 
 yearsite_f <- as.factor(only_unsupp$yearsite)
-n_yearsites <- length(levels(yearsite))
+n_yearsites <- length(levels(yearsite_f))
 
-n_years <- length(levels(only_unsupp$year_f))
+n_years <- length(levels(only_unsupp$year))
 
 # model matrix used to store betas
-X <- model.matrix(~ 1 + chickage:year_f + chicks:year_f, data = only_unsupp)
+X <- model.matrix(~ 1 + chickage:year + chicks:year, data = only_unsupp)
+
 head(X)
 
 # data for Jags model
