@@ -27,6 +27,24 @@ Investigating variance sensitivity among breeding Peregrine Falcons in response 
 # Heterogenous residual variance by year
 
 The code for this model is in ```scripts/jags.R```
+
+```r
+# Fixed effects
+X <- model.matrix(~ 1 + chickage:year_f + chicks:year_f, data = only_unsupp)
+
+# all data going into model below
+jags_data <- list(y = only_unsupp$logIVI,     # ivi 
+                  years = only_unsupp$year_f, # year identifier for variance
+                  nest = nestID,              # random intercept for nest
+                  yearsite = yearsite_f,      # random intercept for yearsite
+                  n_years = n_years,          # number of years
+                  n_nests = n_nests,          # number of nests
+                  n_yearsites = n_yearsites,  # number of unique yearsites
+                  X = X,                      # intercept + covariates (model matrix)
+                  N = nrow(only_unsupp),      # sample size
+                  K = ncol(X))                # Number of betas
+```
+
 ## Model
 ```
     # Likelihood ~~~~~~~~~~~~~
