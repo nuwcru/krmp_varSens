@@ -24,7 +24,74 @@ Investigating variance sensitivity among breeding Peregrine Falcons in response 
 
 ```
 
-### Simulations
+# Heterogenous residual variance by year
+
+
+## Model
+```
+    # Likelihood ~~~~~~~~~~~~~
+    
+        for (i in 1:N) {
+          y[i]  ~ dnorm(mu[i], tau[years[i]])
+          mu[i] <- inprod(beta[], X[i,]) + a[nest[i]] + g[yearsite[i]]
+        
+        # store predicted values at each iteration in y_pred
+        y_pred[i] ~ dnorm(mu[i], tau[years[i]])
+        }
+    
+    # Priors ~~~~~~~~~~~~~~~
+        
+     # priors for betas
+        for (i in 1:K) {beta[i] ~ dnorm(0,0.001)}
+        
+     # prior for residual variance weighting matrix
+        for (i in 1:n_years){
+        chSq[i]  ~ dgamma(0.5, 0.5)
+        z[i]     ~ dnorm(0, 0.04)I(0,)
+        sigma[i] <- z[i] / sqrt(chSq[i])
+        tau[i]   <- pow(sigma[i], -2)
+        }
+
+    
+     # prior for random intercepts, a = site, g = yearsite
+        for (i in 1:n_nests) {a[i] ~ dnorm(a_bar, sigma_nest)}
+        for (i in 1:n_yearsites) {g[i] ~ dnorm(g_bar, sigma_yearsite)}
+    
+     # prior for mean/variance of random intercepts
+        a_bar ~ dnorm(0, 1.5)
+        sigma_nest ~ dexp(1)
+        g_bar ~ dnorm(0, 1.5)
+        sigma_yearsite ~ dexp(1)
+        
+```
+
+For the sake of brevity, I won't show diagnostic plots, but mixing went relatively well. Random intercepts struggled a little, so I'll have to look at that, and the intercept wasn't great. Everything else was good though. You'll see in the simulation section below, I'm using a very similar model structure and it estimated my simulated parameters accurately.
+
+## Betas
+
+<p align="center">
+  <img width="800" src="https://github.com/nuwcru/krmp_varSens/blob/master/Figures/beta_chickage.jpeg">
+   <img width="800" src="https://github.com/nuwcru/krmp_varSens/blob/master/Figures/betas_broodsize.jpeg">
+</p>
+
+## Sigma - yearly residual variance
+
+logIVI ~ N(mu_i, sigma^2_year)
+
+Below we're plotting the estimated sigma (+/- credibles) as a ratio to the reference group which is 2013 in this case. 
+
+<p align="center">
+  <img width="800" src="https://github.com/nuwcru/krmp_varSens/blob/master/Figures/sigma_CIs.jpeg">
+</p>
+
+## Predicted vs. real IVI
+
+<p align="center">
+  <img width="800" src="https://github.com/nuwcru/krmp_varSens/blob/master/Figures/chickage-year.jpeg">
+   <img width="800" src="https://github.com/nuwcru/krmp_varSens/blob/master/Figures/broodsize-year.jpeg">
+</p>
+
+# Simulations
 
 #### Gaussian distributed IVI - heterogenous residual variance among years
 
