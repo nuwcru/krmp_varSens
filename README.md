@@ -40,19 +40,6 @@ Investigating variance sensitivity among breeding Peregrine Falcons in response 
 
 # Heterogenous residual variance by year
 
-``` 
-How do you know that your model is right? 
-When the residuals contain no information.  
-
-How do you know that your model is good enough?  
-When the residuals contain no information that you can resolve.
-
--box and tiao
-```
-
-<br />
-
-<br />
 
 The code for this model is in ```scripts/jags.R```
 
