@@ -154,7 +154,7 @@ When the residuals contain no information _that you can resolve_.
 ```
 - [Box and Tiao](https://www.amazon.ca/Bayesian-Inference-Statistical-Analysis-George/dp/0471574287)
 
-I think there's still some information in the residuals that we can model - which may be a good opportunity to introduce yearly environmental conditions.
+I think there's still some information in the residuals that we can model - which may be a good opportunity to introduce yearly environmental conditions. Might be some autoregressive covariance that we have to deal with as well. I wouldn't be surprised if IVI's were were correlated with previous IVI's up to a certain point.
 
 <br />
 
