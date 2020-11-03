@@ -191,15 +191,12 @@ het_mcmc[1] %>%
            upper80 = mean + (1.282 * sd), lower80 = mean - (1.282 * sd),
            upper50 = mean + (0.674 * sd), lower50 = mean - (0.674 * sd)) %>%
     ggplot() +
-    geom_hline(yintercept = c(2013, 2014, 2015, 2016, 2017, 2018, 2019), colour = grey8, alpha = 0.5) +
+    geom_hline(yintercept = 2013:2019, colour = grey8, alpha = 0.5) +
     geom_vline(xintercept = 1, colour = grey6, linetype = "dashed") +
-    geom_segment(aes(x = lower95, xend = upper95, 
-                     y = c(2013, 2014, 2015, 2016, 2017, 2018, 2019), yend = c(2013, 2014, 2015, 2016, 2017, 2018, 2019)), colour = "#DFEBF7", size = 2) +
-    geom_segment(aes(x = lower80, xend = upper80, 
-                     y = c(2013, 2014, 2015, 2016, 2017, 2018, 2019), yend = c(2013, 2014, 2015, 2016, 2017, 2018, 2019)), colour = "#A5CADF", size = 2) +
-    geom_segment(aes(x = lower50, xend = upper50, 
-                     y = c(2013, 2014, 2015, 2016, 2017, 2018, 2019), yend = c(2013, 2014, 2015, 2016, 2017, 2018, 2019)), colour = "#4A84BD", size = 2) +
-    geom_point(aes(y = c(2013, 2014, 2015, 2016, 2017, 2018, 2019), x = mean), shape = 21, fill = "white", colour = "black", size = 4)+
+    geom_segment(aes(x = lower95, xend = upper95, y = 2013:2019, yend = 2013:2019), colour = "#DFEBF7", size = 2) +
+    geom_segment(aes(x = lower80, xend = upper80, y = 2013:2019, yend = 2013:2019), colour = "#A5CADF", size = 2) +
+    geom_segment(aes(x = lower50, xend = upper50, y = 2013:2019, yend = 2013:2019), colour = "#4A84BD", size = 2) +
+    geom_point(aes(y = 2013:2019, x = mean), shape = 21, fill = "white", colour = "black", size = 4)+
     ylab("") + xlab("Sigma yearly estimate (95% CI)") +
     scale_x_continuous(limits = c(0.7,1.3)) +
     scale_y_continuous(breaks = 2013:2019) +
@@ -210,3 +207,47 @@ het_mcmc[1] %>%
           axis.ticks.y = element_blank())
     
 
+
+t <- het_mcmc[1] %>%
+    tidybayes::spread_draws(beta[i]) %>%
+    group_by(i) %>%
+    summarize(mean = mean(beta), sd = sd(beta)) %>%
+    mutate(upper95 = mean + (1.96 * sd), lower95 = mean - (1.96 * sd),
+           upper80 = mean + (1.282 * sd), lower80 = mean - (1.282 * sd),
+           upper50 = mean + (0.674 * sd), lower50 = mean - (0.674 * sd)) %>%
+    mutate(param = colnames(X))
+
+# betas for chickage
+t[2:8,] %>% 
+    ggplot() +
+    geom_vline(xintercept = 0, colour = grey6, linetype = "dashed") +
+    geom_segment(aes(x = lower95, xend = upper95, y = 2013:2019, yend = 2013:2019), colour = "#DFEBF7", size = 2) +
+    geom_segment(aes(x = lower80, xend = upper80, y = 2013:2019, yend = 2013:2019), colour = "#A5CADF", size = 2) +
+    geom_segment(aes(x = lower50, xend = upper50, y = 2013:2019, yend = 2013:2019), colour = "#4A84BD", size = 2) +
+    geom_point(aes(y = 2013:2019, x = mean), shape = 21, fill = "white", colour = "black", size = 4) +
+    scale_x_continuous(limits = c(-0.100,0.100)) +
+    scale_y_continuous(breaks = 2013:2019) +
+    ylab("") + xlab("Chickage : Year") + 
+    theme_nuwcru() + 
+    theme(panel.border = element_blank(),
+          #axis.line.x = element_blank(),
+          axis.line.y = element_blank(),
+          axis.ticks.y = element_blank())
+
+
+# betas for broodsize
+t[9:15,] %>% 
+    ggplot() +
+    geom_vline(xintercept = 0, colour = grey6, linetype = "dashed") +
+    geom_segment(aes(x = lower95, xend = upper95, y = 2013:2019, yend = 2013:2019), colour = "#DFEBF7", size = 2) +
+    geom_segment(aes(x = lower80, xend = upper80, y = 2013:2019, yend = 2013:2019), colour = "#A5CADF", size = 2) +
+    geom_segment(aes(x = lower50, xend = upper50, y = 2013:2019, yend = 2013:2019), colour = "#4A84BD", size = 2) +
+    geom_point(aes(y = 2013:2019, x = mean), shape = 21, fill = "white", colour = "black", size = 4) +
+    scale_x_continuous(limits = c(-0.3,0.300)) +
+    scale_y_continuous(breaks = 2013:2019) +
+    ylab("") + xlab("Broodsize : Year") + 
+    theme_nuwcru() + 
+    theme(panel.border = element_blank(),
+          #axis.line.x = element_blank(),
+          axis.line.y = element_blank(),
+          axis.ticks.y = element_blank())
