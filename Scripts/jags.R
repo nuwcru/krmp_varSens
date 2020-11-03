@@ -2,7 +2,8 @@ library(R2jags)
 library(nuwcru)
 library(dplyr)
 library(ggplot2)
-
+library(tidyverse)
+library(tidybayes)
 
 
 # Data Load/prep ----------------------------------------------------------
@@ -20,13 +21,13 @@ n_yearsites <- length(levels(yearsite_f))
 n_years <- length(levels(only_unsupp$year))
 
 # model matrix used to store betas
-X <- model.matrix(~ 1 + chickage:year + chicks:year, data = only_unsupp)
+X <- model.matrix(~ 1 + chickage:year + chicks:year, data = only_unsupp) #to add interaction between broodsize:chickage do it here
 
 head(X)
 
 # data for Jags model
 jags_data <- list(y = only_unsupp$logIVI,     # ivi 
-                  years = only_unsupp$year_f, # year identifier for variance
+                  years = only_unsupp$year, # year identifier for variance
                   nest = nestID,              # random intercept for nest
                   yearsite = yearsite_f,      # random intercept for yearsite
                   n_years = n_years,          # number of years
@@ -104,7 +105,7 @@ het_m4 <- update(het_m3, n.iter = 50000, n.thin = 10)
 
 
 # convert our jags output into mcmc object
-het_mcmc <- as.mcmc(het_m3)
+het_mcmc <- as.mcmc(het_m2)#change back to 4 later 
 
 # Save and load model
 save(het_mcmc, file = "Models/het_mcmc_m3.rda")
@@ -126,13 +127,13 @@ het_mcmc %>%
     tidybayes::gather_draws(beta[i], sigma[i], a[i], g[i]) %>%
     
     # change this filter to look at mixing for the parameter of interest. See above line for options
-    filter(.variable == "g") %>% 
+    filter(.variable == "beta") %>% 
     ungroup() %>%
     mutate(term = ifelse(is.na(i), .variable, paste0(.variable,"[",i,"]"))) %>%
     ggplot(aes(x=.iteration, y=.value, color=as.factor(.chain))) +
     scale_color_manual(values=c("#461220", "#b23a48", "#fcb9b2")) +
     geom_line(alpha=0.5) +
-    facet_grid(term~., scale="free_y", ncol = 2) +
+    facet_grid(term~., scale="free_y") +
     labs(color="chain", x="iteration") +
     theme_nuwcru()
 
@@ -168,7 +169,7 @@ ggplot(only_unsupp, aes(x=chickage, y=logIVI)) +
     theme(panel.border = element_blank(), axis.line.y = element_blank(), axis.line.x = element_blank(), 
           axis.text.x = element_blank(),axis.text.y = element_blank(), axis.ticks.x = element_blank(), 
           axis.ticks.y = element_blank())
-display.brewer.pal(n = 3)
+
 
 # log ivi ~ broodsize
 # dimension exported: 1200 x 804
