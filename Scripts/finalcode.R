@@ -1,7 +1,7 @@
 dir= "G:/My Drive/Rebekah thesis/Clean Provisioning Data"
 setwd(dir)
 
-data <- read.csv("data/Clean IVI years 2013-2019.csv")
+data <- read.csv("G:/My Drive/Rebekah thesis/Clean Provisioning Data/11.09.2020/Clean IVI years 2013-2019.csv")
 
 library(tidyr)
 library(dplyr)
@@ -248,30 +248,30 @@ only_unsupp$yearsite <- as.factor(only_unsupp$yearsite)
 only_unsupp$year <- as.factor(only_unsupp$year)
 
 ctrl <- lmeControl(opt="optim");
-<<<<<<< HEAD
+
 a1<- lme(logIVI ~ chickage:year + chicks:year,   
-=======
-a1<- lme(logIVI ~ chickage:year_f + chicks:year_f,   
           random = ~ 1 | yearsite / site,           
-          weights = varIdent(form = ~ 1|year_f),
+          weights = varIdent(form = ~ 1|year),
           control=ctrl, #this was to fix the error message -> nlminb problem, convergence error code = 1 message = iteration limit reached without convergence (10)
           data = only_unsupp, 
          na.action=na.exclude) #this was to fix the error message -> Error in na.fail.default(list(year = c(2015L, 2015L, 2015L, 2015L, 2015L,  :missing values in object
-a2<- lme(logIVI ~ chickage:year_f + chicks:year_f,   
->>>>>>> 2110e8866bf30c1ed17ddfc81a1899ce0677d09a
+
+a2<- lme(logIVI ~ chickage:year + chicks:year,   
           random = list (site=~1, yearsite=~1),           
           weights = varIdent(form = ~ 1|year),
           control=ctrl, #this was to fix the error message -> nlminb problem, convergence error code = 1 message = iteration limit reached without convergence (10)
           data = only_unsupp, 
          na.action=na.exclude) #this was to fix the error message -> Error in na.fail.default(list(year = c(2015L, 2015L, 2015L, 2015L, 2015L,  :missing values in object
-a3<- lme(logIVI ~ chickage:year_f + chicks:year_f,   
+
+a3<- lme(logIVI ~ chickage:year + chicks:year,   
           random = list (site=~1, yearsite=~1),           
           control=ctrl, #this was to fix the error message -> nlminb problem, convergence error code = 1 message = iteration limit reached without convergence (10)
           data = only_unsupp, 
          na.action=na.exclude) #this was to fix the error message -> Error in na.fail.default(list(year = c(2015L, 2015L, 2015L, 2015L, 2015L,  :missing values in object
-a4 <- lme(logIVI ~ chickage + chicks + year_f,   
+
+a4 <- lme(logIVI ~ chickage + chicks + year,   
           random = list (site=~1, yearsite=~1),   
-          weights = varIdent(form = ~ 1|year_f),
+          weights = varIdent(form = ~ 1|year),
           data = only_unsupp, 
          na.action=na.exclude) #this was to fix the error message -> Error in na.fail.default(list(year = c(2015L, 2015L, 2015L, 2015L, 2015L,  :missing values in object
 summary(a4)
