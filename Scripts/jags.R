@@ -144,6 +144,7 @@ het_mcmc %>%
 
 # Effects Plotting --------------------------------------------------------
 
+# join data set with model predictions
 het_d <- het_mcmc %>%
     tidybayes::spread_draws(mu[i], y_pred[i]) %>%
     ungroup() %>%
@@ -153,6 +154,7 @@ het_d <- het_mcmc %>%
 
 
 
+# Predictions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # log ivi ~ chickage
 # dimension exported: 1200 x 804
 ggplot(only_unsupp, aes(x=chickage, y=logIVI)) +
@@ -181,6 +183,8 @@ ggplot(only_unsupp, aes(x=chicks, y=logIVI)) +
           axis.ticks.y = element_blank())
 
 
+
+# Sigmas ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Sigma as a ratio to 2013 (reference)
 # dimension exported: 1200 x 804
 het_mcmc[1] %>%
@@ -207,7 +211,9 @@ het_mcmc[1] %>%
           axis.ticks.y = element_blank())
     
 
+# Betas ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+# gather betas, calculate mean and credibles
 t <- het_mcmc[1] %>%
     tidybayes::spread_draws(beta[i]) %>%
     group_by(i) %>%
