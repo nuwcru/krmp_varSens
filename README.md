@@ -24,7 +24,7 @@ Investigating variance sensitivity among breeding Peregrine Falcons in response 
       ├── betas_broodsize.jpg   <- from jags.R - het resid variance by year
       ├── sigma_CIs.jpg         <- from jags.R - het resid variance by year
       ├── chickage-year.jpg     <- from jags.R - het resid variance by year
-      └── broodsize-year.jpg   <- from jags.R - het resid variance by year
+      └── broodsize-year.jpg    <- from jags.R - het resid variance by year
 
 ```
 
