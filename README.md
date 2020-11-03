@@ -2,7 +2,7 @@
 
 #### Contents
 [Modeling Real Data](#Heterogenous-residual-variance-by-year) |
-[Modeling simulated data](#simulation) |
+[Modeling simulated data](#Simulations) |
 
 
 ### Intro
