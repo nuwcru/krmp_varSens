@@ -118,7 +118,7 @@ Kim, the model output is converted to an mcmc object in the script, which I thin
 
 logIVI_i ~ N(mu_i, sigma^2_year)
 
-Below we're plotting the estimated sigma (+/- credibles) as a ratio to the reference group which is 2013 in this case. Estimates to the right of 1 (dashed line) had greater residual variance than 2013. Estimates to the left had less residual variance. Some interesting results, maybe we can explore different ways of modeling these residuals. Still model them at the yearly level, but instead of using year, generate a metric that summarizes the yearly conditions. This may be more informative and match residual variance patterns better than a binned category like year.
+Below we're plotting the estimated sigma (+/- credibles) as a ratio to the reference group which is 2013 in this case. Estimates to the right of 1 (dashed line) had greater residual variance than 2013. Estimates to the left had less residual variance. Some interesting results, maybe we can explore different ways of modeling these residuals. Still model them at the yearly level, but instead of using year, generate a metric that summarizes the yearly conditions. This may be more informative and match residual variance patterns better than a binned category like year: logIVI_i ~ N(mu_i, sigma^2_yearly-conditions)
 
 <p align="center">
   <img width="800" src="https://github.com/nuwcru/krmp_varSens/blob/master/Figures/sigma_CIs.jpeg">
