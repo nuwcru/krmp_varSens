@@ -86,6 +86,8 @@ Below we're plotting the estimated sigma (+/- credibles) as a ratio to the refer
 
 ## Predicted vs. real IVI
 
+Real logIVI values are plotted as points, and the relationship with the respective covariate is plotted as a trend with credible intervals.
+
 <p align="center">
   <img width="800" src="https://github.com/nuwcru/krmp_varSens/blob/master/Figures/chickage-year.jpeg">
    <img width="800" src="https://github.com/nuwcru/krmp_varSens/blob/master/Figures/broodsize-year.jpeg">
