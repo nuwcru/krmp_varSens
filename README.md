@@ -104,7 +104,7 @@ Kim, the model output is converted to an mcmc object in the script, which I thin
 
 logIVI_i ~ N(mu_i, sigma^2_year)
 
-Below we're plotting the estimated sigma (+/- credibles) as a ratio to the reference group which is 2013 in this case. 
+Below we're plotting the estimated sigma (+/- credibles) as a ratio to the reference group which is 2013 in this case. Estimates to the right of 1 (dashed line) had greater residual variance than 2013. Estimates to the left had less residual variance.
 
 <p align="center">
   <img width="800" src="https://github.com/nuwcru/krmp_varSens/blob/master/Figures/sigma_CIs.jpeg">
