@@ -27,6 +27,9 @@ Investigating variance sensitivity among breeding Peregrine Falcons in response 
       └── broodsize-year.jpg    <- from jags.R - het resid variance by year
 
 ```
+<br />
+
+<br />
 
 # Heterogenous residual variance by year
 
@@ -62,6 +65,7 @@ jags_data <- list(y = only_unsupp$logIVI,     # ivi
                   N = nrow(only_unsupp),      # sample size
                   K = ncol(X))                # Number of betas
 ```
+<br />
 
 ## Model
 ```
@@ -105,7 +109,7 @@ For the sake of brevity, I won't show diagnostic plots, but mixing went relative
 
 Kim, the model output is converted to an mcmc object in the script, which I think is similar to what MCMCglmm produces. So if you have a particular workflow with model diagnostics/plotting you like, it should transfer over.
 
-
+<br />
 
 ## Betas
 
@@ -113,6 +117,8 @@ Kim, the model output is converted to an mcmc object in the script, which I thin
   <img width="800" src="https://github.com/nuwcru/krmp_varSens/blob/master/Figures/beta_chickage.jpeg">
    <img width="800" src="https://github.com/nuwcru/krmp_varSens/blob/master/Figures/betas_broodsize.jpeg">
 </p>
+
+<br />
 
 ## Sigma - yearly residual variance
 
@@ -124,6 +130,8 @@ Below we're plotting the estimated sigma (+/- credibles) as a ratio to the refer
   <img width="800" src="https://github.com/nuwcru/krmp_varSens/blob/master/Figures/sigma_CIs.jpeg">
 </p>
 
+<br />
+
 ## Predicted vs. real IVI
 
 Real logIVI values are plotted as points, and the relationship with the respective covariate is plotted as a trend with credible intervals.
@@ -133,12 +141,16 @@ Real logIVI values are plotted as points, and the relationship with the respecti
    <img width="800" src="https://github.com/nuwcru/krmp_varSens/blob/master/Figures/broodsize-year.jpeg">
 </p>
 
+<br />
+<br />
 ## Next steps
 * directions from Kim resulting from meeting 
 * convert IVI to original scale so we can more intuitively interpret results. Change distribution to lognormal or gamma to handle original scale
 * Model residuals with a metric of yearly environmental conditions, rather than flat category of year
 * investigate options for estimating energetics of provisioning events
 
+<br />
+<br />
 
 # Simulations
 
