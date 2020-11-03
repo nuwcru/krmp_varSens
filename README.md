@@ -106,6 +106,9 @@ Kim, the model output is converted to an mcmc object in the script, which I thin
 <br />
 
 ## Betas
+* Dark blue = 50% CI
+* Med blue = 80% CI
+* light blue = 95% CI
 
 <p align="center">
   <img width="800" src="https://github.com/nuwcru/krmp_varSens/blob/master/Figures/beta_chickage.jpeg">
