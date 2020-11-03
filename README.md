@@ -65,7 +65,7 @@ Investigating variance sensitivity among breeding Peregrine Falcons in response 
         
 ```
 
-For the sake of brevity, I won't show diagnostic plots, but mixing went relatively well. Random intercepts struggled a little, so I'll have to look at that, and the intercept wasn't great. Everything else was good though. You'll see in the simulation section below, I'm using a very similar model structure and it estimated my simulated parameters accurately.
+For the sake of brevity, I won't show diagnostic plots, but mixing went relatively well. Random intercepts struggled a little, so I'll have to look at that, and the intercept wasn't great. Everything else was good though. I'm using a very similar model structure to the one posted in the simulation section at the bottom of this page. That model estimated my simulated parameters values accurately.
 
 ## Betas
 
