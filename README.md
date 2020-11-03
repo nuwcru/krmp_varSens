@@ -43,6 +43,12 @@ Investigating variance sensitivity among breeding Peregrine Falcons in response 
 
 The code for this model is in ```scripts/jags.R```
 
+The model output can be downloaded [here](https://drive.google.com/drive/u/1/folders/1o5wTrdWk1oPJiT3bAa7JP3bLc7U4etKl), and can be loaded with:
+```r
+load("Models/het_mcmc_m3.rda") 
+``` 
+or whatever the particular path is on your computer. This way you don't have to run the jags model.
+
 ```r
 # Fixed effects
 X <- model.matrix(~ 1 + chickage:year_f + chicks:year_f, data = only_unsupp)
