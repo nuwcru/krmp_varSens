@@ -182,13 +182,12 @@ for (i in 1:length(yearly_resid)){
 
 
 Then if we plot the mode of yearly residual variance posterios, and +/- 95% credibles we get:
-
+lme4 models are in red, and the single jags model is in blue.
 
 <p align="center">
-  <img width="800" src="https://github.com/nuwcru/krmp_varSens/blob/master/Figures/lme4_sim.png">
+  <img width="800" src="https://github.com/nuwcru/krmp_varSens/blob/master/Figures/jags_comparison.png">
 </p>
 
-Compare the pattern with what we're getting out of the single jags model above. Results are similar, and the conclusion would be the same. 
 
 <br />
 
