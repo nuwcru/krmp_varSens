@@ -1,5 +1,6 @@
 library(tidyverse)
 library(lubridate)
+library(nuwcru)
 
 # come up with a metric for energy delivered
 # duration of feeding event? model with data that exists for prey remaining
