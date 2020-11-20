@@ -126,6 +126,70 @@ Below we're plotting the estimated sigma (+/- credibles) as a ratio to the refer
   <img width="800" src="https://github.com/nuwcru/krmp_varSens/blob/master/Figures/sigma_CIs.jpeg">
 </p>
 
+### Comparison with multiple lme4 models
+
+Here's the code to model every year separately, and then run sims on the data to get posterior distributions (pseudo posterior?):
+
+```r
+
+# function to calculate mode from our posteriors
+getmode <- function(x) {
+  uniqx <- unique(x)
+  uniqx[which.max(tabulate(match(x, uniqx)))]
+}
+
+
+# model each year in lme4, and store in a list
+year <- d %>% group_split(year)
+
+model_outs <- lapply(year, function(x){ 
+  lmer(logIVI ~ chicks + chickage + (1|site), x)})
+
+# as an example, you can pull out any year
+model_outs[[1]] # this is 2013
+model_outs[[2]] # this is 2014, and so on...
+
+
+
+
+# simulate all years in the list
+sim <- lapply(model_outs, function(x){
+        sim(x, n.sims=10000)})
+
+
+
+# pull out yearly residual variance
+yearly_resid <- lapply(sim, function(x){
+  as.mcmc(x@sigma^2)})
+
+
+
+# create empty dataframe that will store information about our posteriors
+nd <- data.frame(year = 2013:2019,
+                 post_mode= rep(NA, length(2013:2019)),
+                 sd       = rep(NA, length(2013:2019)),
+                 lower    = rep(NA, length(2013:2019)),
+                 upper    = rep(NA, length(2013:2019)))
+
+for (i in 1:length(yearly_resid)){
+      nd[i,]$post_mode <- getmode(as.numeric(yearly_resid[[i]]))
+      nd[i,]$sd <- sd(as.numeric(yearly_resid[[i]]))
+      nd[i,]$lower <- nd[i,]$post_mode - (1.96*nd[i,]$sd)
+      nd[i,]$upper <- nd[i,]$post_mode + (1.96*nd[i,]$sd)
+}
+
+```
+
+
+Then if we plot the mode of yearly residual variance posterios, and +/- 95% credibles we get:
+
+
+<p align="center">
+  <img width="800" src="https://github.com/nuwcru/krmp_varSens/blob/master/Figures/lme4_sim.png">
+</p>
+
+Compare the pattern with what we're getting out of the single jags model above. Results are similar, and the conclusion would be the same. 
+
 <br />
 
 ## Predicted vs. real IVI (posterior predictive checks)
