@@ -4,6 +4,12 @@
 
 ## Variance Sensitivity
 
+### To Do
+- [ ] clean repo
+- [ ] re-calculate IVI
+- [ ] translate jags to gamma distribution
+- [ ] incorporate random slope / intercept for year with correlation
+- [ ] examine brood mass options
 
 
 
