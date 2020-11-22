@@ -22,6 +22,8 @@ d$chickage <- d$chickage-1
 
 
 
+library(tidybayes)
+
 
 
 
@@ -38,15 +40,25 @@ n_years <- length(levels(d$year))
 d$chickage <- d$chickage - 1
 
 # model matrix used to store betas
+
 X <- model.matrix(~ 1 + chickage:year + chicks:year, data = d)
+
+
+X <- model.matrix(~ 1 + chickage:year + chicks:year, data = only_unsupp) #to add interaction between broodsize:chickage do it here
 
 
 
 # data for Jags model
+
 jags_data <- list(y = d$logIVI,     # ivi 
                  years = d$year, # year identifier for variance
                  nest = nestID,              # random intercept for nest
                   year = d$year,
+
+jags_data <- list(y = only_unsupp$logIVI,     # ivi 
+                  years = only_unsupp$year, # year identifier for variance
+                  nest = nestID,              # random intercept for nest
+
                   yearsite = yearsite_f,      # random intercept for yearsite
                   n_years = n_years,          # number of years
                   n_nests = n_nests,          # number of nests
@@ -125,7 +137,7 @@ het_m4 <- update(het_m3, n.iter = 20000, n.thin = 10)
 
 
 # convert our jags output into mcmc object
-het_mcmc <- as.mcmc(het_m3)
+het_mcmc <- as.mcmc(het_m2)#change back to 4 later 
 
 
 
@@ -248,7 +260,7 @@ ggplot(d, aes(x=chickage, y=logIVI)) +
     theme(panel.border = element_blank(), axis.line.y = element_blank(), axis.line.x = element_blank(), 
           axis.text.x = element_blank(),axis.text.y = element_blank(), axis.ticks.x = element_blank(), 
           axis.ticks.y = element_blank())
-display.brewer.pal(n = 3)
+
 
 # log ivi ~ broodsize
 # dimension exported: 1200 x 804

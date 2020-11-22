@@ -1,7 +1,4 @@
-dir= "G:/My Drive/Rebekah thesis/Clean Provisioning Data"
-setwd(dir)
-
-data <- read.csv("G:/My Drive/Rebekah thesis/Clean Provisioning Data/11.09.2020/Clean IVI years 2013-2019.csv")
+data <- read.csv("Data/Clean IVI years 2013-2019.csv")
 
 library(tidyr)
 library(dplyr)

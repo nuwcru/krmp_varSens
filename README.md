@@ -1,9 +1,15 @@
 #### Contents
 [Modeling Real Data](#Heterogenous-residual-variance-by-year) |
-[Modeling simulated data](#Simulations) |
+[Modeling simulated data](#Simulations) 
 
 ## Variance Sensitivity
 
+### To Do
+- [ ] clean repo
+- [ ] re-calculate IVI
+- [ ] translate jags to gamma distribution
+- [ ] incorporate random slope / intercept for year with correlation
+- [ ] examine brood mass options
 
 
 
@@ -42,6 +48,8 @@ Investigating variance sensitivity among breeding Peregrine Falcons in response 
 
 
 The code for this model is in ```scripts/jags.R```
+
+
 
 ```r
 # Fixed effects
@@ -99,9 +107,6 @@ jags_data <- list(y = only_unsupp$logIVI,     # ivi
         
 ```
 
-For the sake of brevity, I won't show diagnostic plots, but mixing went relatively well. Random intercepts struggled a little, so I'll have to look at that, and the intercept wasn't great. Everything else was good though. I'm using a very similar model structure to the one posted in the simulation section at the bottom of this page. That model estimated my simulated parameters values accurately.
-
-Kim, the model output is converted to an mcmc object in the script, which I think is similar to what MCMCglmm produces. So if you have a particular workflow with model diagnostics/plotting you like, it should transfer over.
 
 <br />
 
@@ -127,9 +132,72 @@ Below we're plotting the estimated sigma (+/- credibles) as a ratio to the refer
   <img width="800" src="https://github.com/nuwcru/krmp_varSens/blob/master/Figures/sigma_CIs.jpeg">
 </p>
 
+### Comparison with multiple lme4 models
+
+Here's the code to model every year separately, and then run sims on the data to get posterior distributions (pseudo posterior?):
+
+```r
+
+# function to calculate mode from our posteriors
+getmode <- function(x) {
+  uniqx <- unique(x)
+  uniqx[which.max(tabulate(match(x, uniqx)))]
+}
+
+
+# model each year in lme4, and store in a list
+year <- d %>% group_split(year)
+
+model_outs <- lapply(year, function(x){ 
+  lmer(logIVI ~ chicks + chickage + (1|site), x)})
+
+# as an example, you can pull out any year
+model_outs[[1]] # this is 2013
+model_outs[[2]] # this is 2014, and so on...
+
+
+
+
+# simulate all years in the list
+sim <- lapply(model_outs, function(x){
+        sim(x, n.sims=10000)})
+
+
+
+# pull out yearly residual variance
+yearly_resid <- lapply(sim, function(x){
+  as.mcmc(x@sigma^2)})
+
+
+
+# create empty dataframe that will store information about our posteriors
+nd <- data.frame(year = 2013:2019,
+                 post_mode= rep(NA, length(2013:2019)),
+                 sd       = rep(NA, length(2013:2019)),
+                 lower    = rep(NA, length(2013:2019)),
+                 upper    = rep(NA, length(2013:2019)))
+
+for (i in 1:length(yearly_resid)){
+      nd[i,]$post_mode <- getmode(as.numeric(yearly_resid[[i]]))
+      nd[i,]$sd <- sd(as.numeric(yearly_resid[[i]]))
+      nd[i,]$lower <- nd[i,]$post_mode - (1.96*nd[i,]$sd)
+      nd[i,]$upper <- nd[i,]$post_mode + (1.96*nd[i,]$sd)
+}
+
+```
+
+
+Then if we plot the mode of yearly residual variance posterios, and +/- 95% credibles we get:
+lme4 models are in red, and the single jags model is in blue.
+
+<p align="center">
+  <img width="800" src="https://github.com/nuwcru/krmp_varSens/blob/master/Figures/jags_comparison.png">
+</p>
+
+
 <br />
 
-## Predicted vs. real IVI
+## Predicted vs. real IVI (posterior predictive checks)
 
 Real logIVI values are plotted as points, and the relationship with the respective covariate is plotted as a trend with credible intervals.
 
@@ -140,6 +208,20 @@ Real logIVI values are plotted as points, and the relationship with the respecti
 
 <br />
 <br />
+
+### Thoughts
+
+```
+How do you know that your model is right? 
+When the residuals contain no information.  
+
+How do you know that your model is good enough?  
+When the residuals contain no information _that you can resolve_.
+```
+- [Box and Tiao](https://www.amazon.ca/Bayesian-Inference-Statistical-Analysis-George/dp/0471574287)
+
+I think there's still some information in the residuals that we can model - which may be a good opportunity to introduce yearly environmental conditions. Might be some autoregressive covariance that we have to deal with as well. I wouldn't be surprised if IVI's were were correlated with previous IVI's up to a certain point.
+
 <br />
 
 # Simulations

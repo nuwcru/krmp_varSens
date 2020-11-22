@@ -11,6 +11,9 @@
 # Output files from R CMD build
 /*.tar.gz
 
+# model outs
+*.rda
+
 # Output files from R CMD check
 /*.Rcheck/
 
