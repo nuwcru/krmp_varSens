@@ -334,16 +334,31 @@ y2019 <- subset(only_unsupp, only_unsupp$year=="2019")
 y2018 <- subset(only_unsupp, only_unsupp$year=="2018")
 y2017 <- subset(only_unsupp, only_unsupp$year=="2017")
 y2016 <- subset(only_unsupp, only_unsupp$year=="2016")
-y2015 <- subset(only_unsupp, only_unsupp$year=="2015")
+y2015 <- subset(d, d$year=="2015")
 y2014 <- subset(only_unsupp, only_unsupp$year=="2014")
-y2013 <- subset(only_unsupp, only_unsupp$year=="2013")
+y2013 <- subset(d, d$year=="2013")
   
 
-y2013<- lme(logIVI ~ -1+chickage + chicks,   
+y2013_m <- lme(logIVI ~ chickage_s + chicks_s,   
          random = ~1|site,          
-         data = y2013, 
+         data = y2015, 
          na.action=na.exclude) 
+
+nd_2013 <- expand.grid(chicks_s = seq(min(y2013$chicks_s, na.rm = TRUE), max(y2013$chicks_s, na.rm = TRUE), length = 4),
+                  chickage_s = seq(min(y2013$chickage_s), max(y2013$chickage_s), length = 12), 
+                  site = unique(y2013$site))
+
+preds_2013 <- predict(y2013_m, nd_2013, level = 0:1)
+y2013_pred <- cbind(nd_2013, preds_2013)
+preds_nlme <- predict(m, nd, level = 0:2)
+
+
 summary(y2013)
+summary(m)
+
+
+
+
 anova(y2013)
 
 y2014<- lme(logIVI ~ -1+chickage + chicks,   
