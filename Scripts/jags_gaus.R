@@ -4,68 +4,46 @@ library(dplyr)
 library(ggplot2)
 library(tidyverse)
 library(R2jags)
-d <- read_csv("Data/Clean IVI years 2013-2019.csv")
+
+
 # Data Load/prep ----------------------------------------------------------
 
-#glimpse(d)
-d <- d %>% filter(supplimented == "n")
-d$logIVI <- log(d$ivi)
-d$hatch_date <- date(d$hatch_date)
-d$chickage <- as.Date(d$date) - as.Date(d$hatch_date)
-d <- d %>% filter(chickage < 13)
-d$year <- as.factor(year(d$date))
-d$site <- as.factor(d$site)
-d$chickage <- d$chickage-1
+# make sure these transformations are what you want
+d <- read_csv("Data/ivi_eh.csv") %>% 
+    filter(supplimented == "n") %>%
+    mutate(logIVI   = log(ivi),
+           year     = as.factor(year),
+           site     = as.factor(d$site),
+           chickage = chickage -1,  
+           site     = as.factor(site),
+           yearsite_f = as.factor(yearsite))
 
-
-
-
-
-
-library(tidybayes)
-
-
-
-
+d <- d %>% filter(!is.na(chicks) & !is.na(chickage))
 
 # change to factors, and calculate unique levels of randoms
-nestID <- as.factor(d$site)
-n_nests <- length(levels(nestID))
 
-yearsite_f <- as.factor(d$yearsite)
-n_yearsites <- length(levels(yearsite_f))
-
+# lengths to use for jags
+n_nests <- length(levels(d$site))
+n_yearsites <- length(levels(d$yearsite_f))
 n_years <- length(levels(d$year))
+d$chicks
 
-d$chickage <- d$chickage - 1
 
 # model matrix used to store betas
 
 X <- model.matrix(~ 1 + chickage:year + chicks:year, data = d)
 
 
-X <- model.matrix(~ 1 + chickage:year + chicks:year, data = only_unsupp) #to add interaction between broodsize:chickage do it here
-
-
-
-# data for Jags model
-
-jags_data <- list(y = d$logIVI,     # ivi 
-                 years = d$year, # year identifier for variance
-                 nest = nestID,              # random intercept for nest
-                  year = d$year,
-
-jags_data <- list(y = only_unsupp$logIVI,     # ivi 
-                  years = only_unsupp$year, # year identifier for variance
-                  nest = nestID,              # random intercept for nest
-
-                  yearsite = yearsite_f,      # random intercept for yearsite
-                  n_years = n_years,          # number of years
-                  n_nests = n_nests,          # number of nests
-                  n_yearsites = n_yearsites,  # number of unique yearsites
-                  X = X,                      # intercept + covariates (model matrix)
-                  N = nrow(d),      # sample size
-                  K = ncol(X))                # Number of betas
+jags_data <- list(y           = d$logIVI,    # ivi 
+                  years       = d$year,      # year identifier for variance
+                  nest        = d$site,      # random intercept for nest
+                  yearsite    = d$yearsite_f,  # random intercept for yearsite
+                  n_years     = n_years,     # number of years
+                  n_nests     = n_nests,     # number of nests
+                  n_yearsites = n_yearsites, # number of unique yearsites
+                  X           = X,           # intercept + covariates (model matrix)
+                  N           = nrow(d),     # sample size
+                  K           = ncol(X))     # Number of betas
 
 
 #~~~~~~~~ Jags Model ~~~~~~~~~~~~#
@@ -77,16 +55,15 @@ cat("
     
         for (i in 1:N) {
           y[i]  ~ dnorm(mu[i], tau[years[i]])
-          mu[i] <- inprod(beta[], X[i,])  + g[yearsite[i]] + a[nest[i]] #+ year_int[year[i]]
-        
-        # store predicted values at each iteration in y_pred
-        y_pred[i] ~ dnorm(mu[i], tau[years[i]])
+          mu[i] <- inprod(beta[], X[i,])  + g[yearsite[i]] + a[nest[i]] 
         }
     
     # Priors ~~~~~~~~~~~~~~~
         
      # priors for betas
         for (i in 1:K) {beta[i] ~ dnorm(0,0.001)}
+    
+
         
      # prior for residual variance weighting matrix
         for (i in 1:n_years){
@@ -98,18 +75,15 @@ cat("
 
     
      # prior for random intercepts, a = site, g = yearsite
-       # for (i in 1:n_years) {year_int[i] ~ dnorm(year_bar, sigma_year)}
         for (i in 1:n_nests) {a[i] ~ dnorm(a_bar, sigma_nest)}
         for (i in 1:n_yearsites) {g[i] ~ dnorm(g_bar, sigma_yearsite)}
     
      # prior for mean/variance of random intercepts
-       # year_bar ~ dnorm(0, 1.5)
-       # sigma_year ~ dexp(1)
         a_bar ~ dnorm(0, 1.5)
         sigma_nest ~ dexp(1)
         g_bar ~ dnorm(0, 1.5)
         sigma_yearsite ~ dexp(1)
-        
+
     }
 ", fill = TRUE)
 sink()
@@ -120,7 +94,7 @@ sink()
 # Run Model ---------------------------------------------------------------
 
 # Store draw information from the folowing parms
-params <- c("beta", "sigma","g", "g_bar", "sigma_yearsite", "year_int")
+params <- c("beta", "sigma","g", "g_bar", "sigma_yearsite")
 
 het_m1   <- jags(data      = jags_data,
                  inits      = NULL,     # runs ok w/o starting values, change if things become more complex
@@ -137,13 +111,15 @@ het_m4 <- update(het_m3, n.iter = 20000, n.thin = 10)
 
 
 # convert our jags output into mcmc object
-het_mcmc <- as.mcmc(het_m2)#change back to 4 later 
+het_mcmc <- as.mcmc(het_m3)#change back to 4 later 
 
 
 
 
 # Model Diagnostics -------------------------------------------------------
 
+
+# for some reason ggplot isn't working for me... 
 # mixing
 het_mcmc %>%
     window(thin=10) %>% 
@@ -160,18 +136,21 @@ het_mcmc %>%
     geom_line(alpha=0.5) +
     facet_grid(term~., scale="free_y") +
     labs(color="chain", x="iteration") +
-    nuwcru::theme_nuwcru()
+    theme_nuwcru()
 
 # ACF
 
-# more diagnostics, to do
+
+# Convert to data frame ---------------------------------------------------
+
+# this section converts the data into a data frame
+# Use the resulting data from in the lme4_v_jags script to visualize model.
+
 x <- het_mcmc %>%
     window(thin=10) %>% 
     # sigma = the yearly residual variance, a = random intercept for site, g = random intercept for yearsite
-    tidybayes::gather_draws(beta[i], sigma[i], g[i], a[i])
+    tidybayes::gather_draws(beta[i], sigma[i], g[i])
 
-unique(x$.variable)
-unique(test$i)
 
 beta <- x %>% filter(.variable == "beta") %>% mutate(i = as.factor(i))
 for (i in 1:length(unique(beta$i))){levels(beta$i)[i] <- colnames(X)[i]}
@@ -180,59 +159,23 @@ levels(beta$i)[1] <- "intercept"
 sigma <- x %>% filter(.variable == "sigma") %>% mutate(i = as.factor(i))
 for (i in 1:length(unique(sigma$i))){levels(sigma$i)[i] <- paste0("sigma", "_", levels(d$year)[i])}
 
-a <- x %>% filter(.variable == "a") %>% mutate(i = as.factor(i))
-for (i in 1:length(unique(a$i))){levels(a$i)[i] <- unique(as.character(d$site))[i]}
+# a <- x %>% filter(.variable == "a") %>% mutate(i = as.factor(i))
+# for (i in 1:length(unique(a$i))){levels(a$i)[i] <- unique(as.character(d$site))[i]}
 
 g <- x %>% filter(.variable == "g") %>% mutate(i = as.factor(i))
 for (i in 1:length(unique(g$i))){levels(g$i)[i] <- unique(as.character(d$yearsite))[i]}
 
-year <- x %>% filter(.variable == "year") %>% mutate(i = as.factor(i))
-for (i in 1:length(unique(year$i))){levels(year$i)[i] <- paste0("int", "_", levels(d$year)[i])}
-unique(year$i)
+# year <- x %>% filter(.variable == "year") %>% mutate(i = as.factor(i))
+# for (i in 1:length(unique(year$i))){levels(year$i)[i] <- paste0("int", "_", levels(d$year)[i])}
+# unique(year$i)
 
-all <- rbind(beta, sigma, a, g)
+all <- rbind(beta, sigma, g)
 names(all) <- c("level", "chain", "iteration", "draw", "parameter", "value")
 
 
 
-arrow::write_parquet(all, "data/jags_out.parquet")
+arrow::write_parquet(all, "data/jags_out_newivi.parquet")
 
-mutate(i = case_when(
-        i == 1 ~ "intercept",
-        i == 2 ~ tolower(colnames(X)[2]),
-        i == 3 ~ colnames(X)[3],
-        i == 4 ~ colnames(X)[4],
-        i == 5 ~ colnames(X)[5],
-        i == 6 ~ colnames(X)[6],
-        i == 7 ~ colnames(X)[7],
-        i == 8 ~ colnames(X)[8],
-        i == 9 ~ colnames(X)[9],
-        i == 10 ~ colnames(X)[10],
-        i == 11 ~ colnames(X)[11],
-        i == 12 ~ colnames(X)[12],
-        i == 13 ~ colnames(X)[13],
-        i == 14 ~ colnames(X)[14],
-        i == 15 ~ colnames(X)[15]
-        ))
-
-sigma <- x %>% filter(.variable == "sigma") %>% group_by(i) %>% tally()
-    mutate(i = case_when(
-        i == 1 ~ "intercept",
-        i == 2 ~ tolower(colnames(X)[2]),
-        i == 3 ~ colnames(X)[3],
-        i == 4 ~ colnames(X)[4],
-        i == 5 ~ colnames(X)[5],
-        i == 6 ~ colnames(X)[6],
-        i == 7 ~ colnames(X)[7],
-        i == 8 ~ colnames(X)[8],
-        i == 9 ~ colnames(X)[9],
-        i == 10 ~ colnames(X)[10],
-        i == 11 ~ colnames(X)[11],
-        i == 12 ~ colnames(X)[12],
-        i == 13 ~ colnames(X)[13],
-        i == 14 ~ colnames(X)[14],
-        i == 15 ~ colnames(X)[15]
-    ))
 
 
 # Effects Plotting --------------------------------------------------------

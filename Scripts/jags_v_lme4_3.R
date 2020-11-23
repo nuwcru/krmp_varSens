@@ -1,7 +1,8 @@
 library(tidyverse)
 library(lme4)
 library(arm)
-
+library(nuwcru)
+library(MCMCglmm)
 # function to calculate mode
 getmode <- function(x) {
   uniqx <- unique(x)
@@ -11,24 +12,21 @@ getmode <- function(x) {
 
 # load data ---------------------------------------------------------------
 
-d <- read_csv("data/Clean IVI years 2013-2019.csv") 
-#glimpse(d)
-d <- d %>% filter(supplimented == "n")
-d$logIVI <- log(d$ivi)
-d$hatchdate <- 
-d$dayinseason <- d$jdate2-186
-d$chickage <- d$dayinseason - d$jhatchdate
-d <- d %>% filter(chickage < 13)
-d$year <- as.factor(d$year)
-d$site <- as.factor(d$site)
-d$chickage <- d$chickage-1
+d <- read_csv("Data/ivi_eh.csv") %>% 
+  filter(supplimented == "n") %>%
+  mutate(logIVI   = log(ivi),
+         year     = as.factor(year),
+         site     = as.factor(site),
+         chickage = chickage -1,  
+         site     = as.factor(site),
+         yearsite_f = as.factor(yearsite))
 
 
 # Jags summary ------------------------------------------------------------
 
 
 # I've compressed the jags output into a parquet to save space
-jags <- arrow::read_parquet("data/jags_out.parquet")
+jags <- arrow::read_parquet("Data/jags_out_newivi.parquet")
 
 
 
@@ -38,14 +36,13 @@ jags <- arrow::read_parquet("data/jags_out.parquet")
   # g is the random intercept for yearsite
 unique(jags$parameter)
 
-jags <- all
 
 # and you can even pull out specific levels of the parameter, so a nest site, or year
 # these are all the combinations
 
 # betas
 jags %>% 
-  filter(parameter == "beta" ) %>% 
+  filter(parameter == "beta") %>% 
   distinct(level)
 
 # sigma - yearly residual variance
@@ -81,10 +78,29 @@ jags_summary %>%
 jags_summary %>% 
   filter(parameter == "beta") %>% filter(str_detect(level, "chickage")) 
 
-library(nuwcru)
+
 # and plot chickage as an example
 jags_summary %>% 
   filter(parameter == "beta") %>% filter(str_detect(level, "chickage")) %>%
+ggplot() +
+  geom_vline(xintercept = 0, colour = grey6, linetype = "dashed") +
+  geom_segment(aes(x = lower95, xend = upper95, y = 2013:2019, yend = 2013:2019), colour = "#DFEBF7", size = 2) +
+  geom_segment(aes(x = lower80, xend = upper80, y = 2013:2019, yend = 2013:2019), colour = "#A5CADF", size = 2) +
+  geom_segment(aes(x = lower50, xend = upper50, y = 2013:2019, yend = 2013:2019), colour = "#4A84BD", size = 2) +
+  geom_point(aes(y = 2013:2019, x = mode), shape = 21, fill = "white", colour = "#4A84BD", size = 3) +
+  #scale_x_continuous(limits = c(-0.100,0.100)) +
+  scale_y_continuous(breaks = 2013:2019) +
+  ylab("") + xlab("Chickage : Year") + 
+  theme_nuwcru() + 
+  theme(panel.border = element_blank(),
+        #axis.line.x = element_blank(),
+        axis.line.y = element_blank(),
+        axis.ticks.y = element_blank())
+
+
+# and plot chickage as an example
+jags_summary %>% 
+  filter(parameter == "beta") %>% filter(str_detect(level, "chicks")) %>%
 ggplot() +
   geom_vline(xintercept = 0, colour = grey6, linetype = "dashed") +
   geom_segment(aes(x = lower95, xend = upper95, y = 2013:2019, yend = 2013:2019), colour = "#DFEBF7", size = 2) +
@@ -231,7 +247,7 @@ jags_summary %>%
     geom_segment(data = nd, aes(x = lower50, xend = upper50, y = year+0.2, yend = year+0.2), colour = "#7f1111", size = 2, alpha = 0.65) +
     geom_point(data = nd, aes(x = post_mode, y = year+0.2), shape = 21, fill = "white", colour = "#7f1111", size = 2) +
     ylab("") + xlab("Sigma yearly estimate (95% CI)") +
-    scale_x_continuous(limits = c(0.57,1.43)) +
+    #scale_x_continuous(limits = c(0.57,1.43)) +
     scale_y_continuous(breaks = 2013:2019) +
     theme_nuwcru() + 
     theme(panel.border = element_blank(),
