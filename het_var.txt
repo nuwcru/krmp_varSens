@@ -6,9 +6,6 @@
         for (i in 1:N) {
           y[i]  ~ dnorm(mu[i], tau[years[i]])
           mu[i] <- inprod(beta[], X[i,])  + g[yearsite[i]] + a[nest[i]] 
-    
-            # Stochastic model on x - missing data
-             X[i,] ~ dnorm( mu_x, prec_x )
         }
     
     # Priors ~~~~~~~~~~~~~~~
@@ -36,8 +33,6 @@
         sigma_nest ~ dexp(1)
         g_bar ~ dnorm(0, 1.5)
         sigma_yearsite ~ dexp(1)
-        mu_x ~ dnorm(0, .0000001)
-        prec_x ~ dgamma(.01, .01)
-        
+
     }
 
