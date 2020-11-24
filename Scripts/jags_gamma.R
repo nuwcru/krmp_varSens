@@ -50,7 +50,7 @@ jags_data <- list(y           = d$ivi,    # ivi
                   K           = ncol(X))     # Number of betas
 
 #~~~~~~~~ Jags Model ~~~~~~~~~~~~#
-sink("het_var.txt")
+sink("het_var_gamma.txt")
 cat("
     model{
     
@@ -98,7 +98,7 @@ params <- c("beta", "r", "mu", "a", "g")
 het_m1   <- jags(data      = jags_data,
                  inits      = NULL,     # runs ok w/o starting values, change if things become more complex
                  parameters = params,
-                 model      = "het_var.txt",
+                 model      = "het_var_gamma.txt",
                  n.thin     = 10, 
                  n.chains   = 3,
                  n.burnin   = 4000,
