@@ -6,7 +6,9 @@ library(tidyverse)
 library(R2jags)
 library(tidybayes)
 
+
 d <- read_csv("Data/Clean IVI years 2013-2019.csv")
+
 
 # Data Load/prep ----------------------------------------------------------
 
@@ -107,11 +109,7 @@ het_m3 <- update(het_m2, n.iter = 20000, n.thin = 10)
 het_m4 <- update(het_m3, n.iter = 20000, n.thin = 10) 
 
 
-
-
-
-
-het_mcmc <- as.mcmc(het_m2)#change back to 4 later 
+het_mcmc <- as.mcmc(het_m4)#change back to 4 later 
 
 
 # for some reason ggplot isn't working for me... 
