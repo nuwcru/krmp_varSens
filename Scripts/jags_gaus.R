@@ -3,7 +3,6 @@ library(nuwcru)
 library(dplyr)
 library(ggplot2)
 library(tidyverse)
-library(R2jags)
 
 
 # Data Load/prep ----------------------------------------------------------
@@ -13,7 +12,7 @@ d <- read_csv("Data/ivi_eh.csv") %>%
     filter(supplimented == "n") %>%
     mutate(logIVI   = log(ivi),
            year     = as.factor(year),
-           site     = as.factor(d$site),
+           site     = as.factor(site),
            chickage = chickage -1,  
            site     = as.factor(site),
            yearsite_f = as.factor(yearsite))
@@ -111,7 +110,7 @@ het_m4 <- update(het_m3, n.iter = 20000, n.thin = 10)
 
 
 # convert our jags output into mcmc object
-het_mcmc <- as.mcmc(het_m3)#change back to 4 later 
+het_mcmc <- as.mcmc(het_m4)#change back to 4 later 
 
 
 
