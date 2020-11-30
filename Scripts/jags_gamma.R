@@ -3,10 +3,10 @@ library(nuwcru)
 library(dplyr)
 library(ggplot2)
 library(tidyverse)
-library(R2jags)
+library(brms)
 library(tidybayes)
 
-d <- read_csv("Data/Clean IVI years 2013-2019.csv")
+# d <- read_csv("Data/Clean IVI years 2013-2019.csv")
 
 # Data Load/prep ----------------------------------------------------------
 
@@ -20,7 +20,7 @@ d <- read_csv("Data/ivi_eh.csv") %>%
            site     = as.factor(site),
            yearsite_f = as.factor(yearsite))
 
-d <- d %>% filter(!is.na(chicks) & !is.na(chickage))
+d <- d %>% filter(!is.na(chicks) & !is.na(chickage) & !is.na(ivi))
 
 # change to factors, and calculate unique levels of randoms
 
@@ -164,3 +164,247 @@ names(all) <- c("level", "chain", "iteration", "draw", "parameter", "value")
 
 arrow::write_parquet(all, "data/jags_out_gamma.parquet")
 
+
+devtools::install_github("brooke-watson/BRRR")
+library(BRRR)
+skrrrahh(15)
+library(brms)
+
+
+
+# brms --------------------------------------------------------------------
+
+
+
+# sample from the prior ---------------------------------------------------
+
+
+m1_prior<- brm(ivi ~ 1 + (1 + chicks + chickage | year ),
+            data = d, 
+            family = lognormal(),
+            prior = c(set_prior("normal(0,.001)", class = "b"),
+                      set_prior("cauchy(0,.001)", class = "sd"),
+                      set_prior("lkj(2)", class = "cor")),
+            warmup = 1000, 
+            iter = 2000, 
+            chains = 4,
+            sample_prior = "only", 
+            control = list(adapt_delta = 0.95))
+
+get_prior(ivi ~ 1 + chicks + chickage + (1|year),
+          data = d, family = lognormal())
+# Plot prior
+draws_prior <- d %>%
+    tidyr::expand(chickage = 1:12, chicks = 1:4, year = 2013:2019) %>%
+    tidybayes::add_fitted_draws(m1_prior, n = 100)
+
+
+plot(density(draws_prior$.value))
+
+draws_prior %>% group_by(chicks) %>% summarize(mean = mean(.value, na.rm = TRUE))
+
+p1 <- ggplot(draws_prior) +
+    aes(x = chickage, y = .value) +
+    geom_line(aes(group = .draw), alpha = .2) +
+    theme(
+        axis.ticks = element_blank(), 
+        axis.text = element_blank(), 
+        axis.title = element_blank()
+    ) + 
+    expand_limits(y = 0:1) +
+    ggtitle("Plausible curves before seeing data")
+p1
+
+
+library(rnaturalearth)
+install.packages("rnaturalearth")
+library("rnaturalearthdata")
+
+# fit the model -----------------------------------------------------------
+
+d <-
+    d %>% 
+    mutate(lat_adj  = lat  * 0.11132,
+           lon2_adj = lon2 * 0.11132)
+
+
+
+
+
+
+
+fit1 <- brm(ivi ~ 1 + (1 + chicks + chickage | year ),
+            sigma ~ year,
+            data = d, 
+            family = lognormal(),
+            prior = c(#set_prior("normal(0,5)", class = "b"),
+                      set_prior("cauchy(0,2)", class = "sd"),
+                      prior("cauchy(0, 2)", class = "sigma"),
+                      set_prior("lkj(2)", class = "cor")),
+            warmup = 1000, 
+            iter = 2000, 
+            chains = 4,
+            control = list(adapt_delta = 0.98))
+
+fit2 <- brm(ivi ~ 1 + chickage + (1 + chicks + chickage | year ),
+            data = d, 
+            family = lognormal(),
+            prior = c(set_prior("normal(0,5)", class = "b"),
+                      set_prior("cauchy(0,2)", class = "sd"),
+                      #prior("cauchy(0, 2)", class = "sigma"),
+                      set_prior("lkj(2)", class = "cor")),
+            warmup = 1000, 
+            iter = 2000, 
+            chains = 4,
+            control = list(adapt_delta = 0.98))
+waic(fit1)
+# examine residuals ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+resid <- residuals(fit1,
+             method = "posterior_predict",
+             type = "pearson")
+
+
+nd <- d %>% filter(!is.na(chicks)) %>%filter(!is.na(ivi))
+nd <- cbind(nd, resid)
+
+loc <- read_csv("/Volumes/GoogleDrive/My Drive/NuWCRU/Analysis/emhedlin/pefa.surv/data/sites.csv") %>% 
+    select(site = SiteID, lat = SiteLatitudeDD , long = SiteLongitudeDD) %>%
+    mutate(site = as.factor(site))
+
+nd <- nd %>% left_join(loc, by = "site")
+
+# checking for spatial patterns in resids
+nd %>% group_by(site, lat, long) %>% summarize(mean_resid = mean(abs(Estimate))) %>%
+    ggplot() +
+    geom_point(aes(x = long, y = lat, size = mean_resid), shape = 21) +
+    # facet_grid(~year) +
+    theme_nuwcru() + facet_nuwcru()
+
+
+
+
+
+# trace plots
+post <- posterior_samples(fit1, add_chain = T)
+
+post %>% 
+    select(-lp__) %>% 
+    gather(key, value, -chain, -iter) %>% 
+    mutate(chain = as.character(chain)) %>% 
+    
+    ggplot(aes(x = iter, y = value, group = chain, color = chain)) +
+    geom_line(size = 1/15) +
+    scale_color_manual(values = c("#80A0C7", "#B1934A", "#A65141", "#EEDA9D")) +
+    scale_x_continuous(NULL, breaks = c(1001, 5000)) +
+    ylab(NULL) +
+    theme_nuwcru() +
+    theme(legend.position  = c(.825, .06),
+          legend.direction = "horizontal") +
+    facet_wrap(~key, ncol = 3, scales = "free_y")
+
+
+
+# Rhat
+
+rhat(fit1) %>% 
+    data.frame() %>% 
+    rownames_to_column() %>% 
+    set_names("parameter", "rhat") %>% 
+    filter(parameter != "lp__") %>% 
+    
+    ggplot(aes(x = rhat, y = reorder(parameter, rhat))) + 
+    geom_segment(aes(xend = 1, yend = parameter),
+                 color = "#EEDA9D") +
+    geom_point(aes(color = rhat > 1), 
+               size = 2) +
+    scale_color_manual(values = c("#80A0C7", "#A65141")) +
+    labs(x = NULL, y = NULL) +
+    theme_nuwcru() +
+    theme(legend.position = "none",
+          axis.ticks.y    = element_blank(),
+          axis.text.y     = element_text(hjust = 0))
+
+
+
+
+# correlations among randoms
+post <- posterior_samples(fit1)
+
+post %>%
+    ggplot() +
+    geom_density(aes(x = cor_year__chicks__chickage),
+                 color = "transparent", fill = "#A65141", alpha = 3/10) +
+   geom_density(aes(x = cor_year__Intercept__chickage),
+             color = "transparent", fill = "#A65141", alpha = 3/10) +
+    geom_density(aes(x = cor_year__Intercept__chicks),
+                 color = "transparent", fill = "#A65141", alpha = 3/10) +
+    annotate(geom = "text", x = -0.2, y = 1.1, 
+             label = "a_year | B_chickage", color = "#A65141", family = "Courier") +
+    annotate(geom = "text", x = 0.75, y = 1.5, 
+             label = "B_chicks | B_age", color = "#A65141", family = "Courier") +
+    annotate(geom = "text", x = -.7, y = 1.5, 
+             label = "a_year | B_chicks", color = "#A65141", family = "Courier") +
+    scale_y_continuous(limits = c(0, 2.5)) +
+    labs(subtitle = "Posterior distributions for correlations\nbetween intercepts and slopes",
+         x = "correlation") +
+    theme_nuwcru()
+
+
+
+
+
+
+m1 <-
+    coef(fit1)$year[ , 1, 1:3] %>%
+    as_tibble() %>%               
+    mutate(year = 2013:2019) %>%  
+    select(year, everything())    
+
+draws_posterior <- d %>%
+    tidyr::expand(chickage = 1:12, chicks = 1:4, year = 2013:2019) %>%
+    tidybayes::add_fitted_draws(fit1, n = 100)
+
+library(nuwcru)
+ggplot(draws_posterior) +
+    aes(x = chickage, y = .value) +
+    geom_point(
+        aes(y = ivi), 
+        color = red2, size = 2, 
+        data = d, alpha = 0.2
+    ) +
+    geom_point(aes(group = .draw), alpha = .2) +
+    facet_grid(~year) +
+    theme_nuwcru() +
+    scale_y_continuous(limits = c(0, 1440)) +
+    expand_limits(y = 0:1) +
+    ggtitle("Plausible curves after seeing data")
+
+
+unique(d$site)
+
+d %>%
+    tidyr::expand(chickage = 1:12, chicks = 1:4, year = 2013:2019) %>%
+    tidybayes::add_fitted_draws(fit1, n = 100) %>% 
+    group_by(year, chickage) %>% 
+    summarize(mean = mean(.value), sd = sd(.value)) %>%
+    mutate(UL95 = mean + 1.96*sd,
+           LL95 = mean - 1.96*sd,
+           UL50 = mean + 0.674*sd,
+           LL50 = mean - 0.674*sd) %>%
+    ggplot() +
+    #geom_line(aes(x = chickage, y = ivi),  colour = grey[7]) +
+    geom_point(data = d, aes(x = chickage, y = ivi), shape = 21, colour = grey7 ) +
+    geom_point(data = filter(d, site == "19"), aes(x = chickage, y = ivi), colour = grey3 ) +
+    geom_ribbon(aes(x = chickage, ymin = LL95, ymax = UL95), fill = red3, alpha = 0.3) +
+    geom_ribbon(aes(x = chickage, ymin = LL50, ymax = UL50), fill = red3, alpha = 0.8) +
+    geom_line(aes(x = chickage, y = mean, group = year), colour = red2, linetype = "dashed") +
+    geom_line(aes(x = chickage, y = mean, group = year), colour = red2) +
+    xlab("") + ylab("first snowfree day (julian)") +
+    scale_y_continuous(limits = c(0,1440)) +
+    facet_wrap(~year, nrow = 1) +
+    theme_nuwcru()       
+    
+residuals(fit1)
+
+p3
