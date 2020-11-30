@@ -1,36 +1,37 @@
+
     model{
     
-    # Likelihood ~~~~~~~~~~~~~
+    # Likelihood ###################################
     
         for (i in 1:N) {
-          y[i]  ~ dnorm(mu[i], tau[years[i]])
-          mu[i] <- inprod(beta[], X[i,])  + g[yearsite[i]] + a[nest[i]] 
+          y[i]  ~ dgamma(r[years[i]], mu.eff[i])
+          mu.eff[i]  <- r[years[i]] / mu[i] 
+          log(mu[i]) <- inprod(beta[], X[i,]) + g[yearsite[i]] + a[nest[i]]
         }
     
-    # Priors ~~~~~~~~~~~~~~~
+    # Priors ######################################
         
-     # priors for betas
-        for (i in 1:K) {beta[i] ~ dnorm(0,0.001)}
-    
-
-        
-     # prior for residual variance weighting matrix
+     # prior for residual variance weighting matrix ###
         for (i in 1:n_years){
         chSq[i]  ~ dgamma(0.5, 0.5)
         z[i]     ~ dnorm(0, 0.04)I(0,)
         sigma[i] <- z[i] / sqrt(chSq[i])
-        tau[i]   <- pow(sigma[i], -2)
+        r[i]     <- pow(sigma[i], -2)
         }
 
+     # priors for betas ###
+        for (i in 1:K) {beta[i] ~ dnorm(0,0.001)}
     
-     # prior for random intercepts, a = site, g = yearsite
+     # prior for random intercepts, a = site, g = yearsite ###
+       # for (i in 1:n_years) {year_int[i] ~ dnorm(year_bar, sigma_year)}
         for (i in 1:n_nests) {a[i] ~ dnorm(a_bar, sigma_nest)}
         for (i in 1:n_yearsites) {g[i] ~ dnorm(g_bar, sigma_yearsite)}
     
-     # prior for mean/variance of random intercepts
+     # prior for mean/variance of random intercepts ###
         a_bar ~ dnorm(0, 1.5)
         sigma_nest ~ dexp(1)
         g_bar ~ dnorm(0, 1.5)
         sigma_yearsite ~ dexp(1)
-
+        
     }
+
