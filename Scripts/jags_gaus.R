@@ -1,3 +1,8 @@
+# here we log transform IVI so that we can easily model heterogenous residuals.
+# We include random intercepts for yearsite and site, and include interactions 
+# between year and chickage/chicks
+
+
 library(R2jags)
 library(nuwcru)
 library(dplyr)
@@ -30,7 +35,7 @@ d$chicks
 
 # model matrix used to store betas
 
-X <- model.matrix(~ 1 + chickage:year + chicks:year, data = d)
+X <- model.matrix(~ 1 + chickage + chicks, data = d)
 
 
 jags_data <- list(y           = d$logIVI,    # ivi 
