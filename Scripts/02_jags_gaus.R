@@ -268,13 +268,16 @@ rhat(het_mcmc) %>%
 
 
 # Ranef Covariance --------------------------------------------------------
+het_mcmc %>%
+  window(thin=10) %>% 
+  
+  # sigma = the yearly residual variance, a = random intercept for site, g = random intercept for yearsite
+  tidybayes::spread_draws(rho_int_chickage, rho_int_chicks) %>%
 
-
-posterior_samples(het_mcmc) %>%
   ggplot() +
-  geom_density(aes(x = cor_year__Intercept__chickage),
+  geom_density(aes(x = rho_int_chickage),
                color = "transparent", fill = blue2, alpha = 5/10) +
-  geom_density(aes(x = cor_year__Intercept__chicks),
+  geom_density(aes(x = rho_int_chicks),
                color = "transparent", fill = red2, alpha = 5/10) +
   annotate(geom = "text", x = 0.6, y = 1.75, 
            label = "a_year | B_chickage", color = blue2, family = "Courier") +
