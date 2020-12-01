@@ -1,6 +1,3 @@
-#### Contents
-[Modeling Real Data](#Heterogenous-residual-variance-by-year) |
-[Modeling simulated data](#Simulations) 
 
 ## Variance Sensitivity
 
@@ -59,11 +56,42 @@ The model includes
 * The model also estimates **independent residual variance by year**, but this can be commented out if need be. It's important to note that estimating residual variance independantly by year eats into the variation explained by other parameters such as chicks and chickage. This is demonstrated below.
 
 
+### Heterogenous Residuals
+
+This is the 02_jags_gaus model with heterogenous residuals turned on. 
+
+Residual variance by year. The estimate visualized here is sigma, and associated uncertainty in the estimate of sigma stemming from the shape of the posterior:
+
+<p float="center">
+  <img src="Figures/het_resid.png" width="600" />
+</p>
+
+The effect of chickage within the same model where yearly variation in the effect of chickage is captured by the random slope.
+
+<p float="center">
+  <img src="Figures/het_resid_chickage.png" width="600" />
+</p>
+
+
+Covariance between yearly intercept and random slopes for chicks and chickage
+
+
+<p float="center">
+  <img src="Figures/ranef_cov.png" width="600" />
+</p>
 
 
 
 
+### Homogenous Residuals
 
+If we assume residual variance is homogenous across years, varying slopes for chickage then steps up to capture that yearly variation.
+
+<p float="center">
+  <img src="Figures/hom_resid_chickage.png" width="600" />
+</p>
+
+Whether we use homegenous residuals structure or heterogenous depends on where we wan't to capture that information. Do we want the variation expressed as an effect of chickage / chicks, or as residual variance?
 
 
 
