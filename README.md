@@ -91,7 +91,9 @@ If we assume residual variance is homogenous across years, varying slopes for ch
   <img src="Figures/hom_resid_chickage.png" width="600" />
 </p>
 
-Whether we use homegenous residuals structure or heterogenous depends on where we wan't to capture that information. Do we want the variation expressed as an effect of chickage / chicks, or as residual variance?
+Whether we use homogenous residuals structure or heterogenous depends on where we wan't to capture that information. Do we want the variation expressed as an effect of chickage / chicks, or as residual variance?
+
+An issue that we likely have to talk about is whether or not heterogenous residual variance actually relates to variance sensitivity theory. Keeping in mind that we're currently modeling residual variance at the population level, there may be more residual variance in poor years simply because there's greater contrast between nests. i say this with the heavy caveat that I have no clue what variance sensitivity theory says. I assumed it referred mostly to provisioning variance within a nest, and not among nests in a population? disregard if I'm wildly wrong.
 
 
 
