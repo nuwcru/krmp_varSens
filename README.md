@@ -60,20 +60,20 @@ The model includes
 
 This is the 02_jags_gaus model with heterogenous residuals turned on. 
 
-Residual variance by year. The estimate visualized here is sigma, and associated uncertainty in the estimate of sigma stemming from the shape of the posterior:
+*Residual variance by year. The estimate visualized here is sigma, and associated uncertainty in the estimate of sigma stemming from the shape of the posterior:*
 
 <p float="center">
   <img src="Figures/het_resid.png" width="600" />
 </p>
 
-The effect of chickage within the same model where yearly variation in the effect of chickage is captured by the random slope.
+*The effect of chickage within the same model where yearly variation in the effect of chickage is captured by the random slope.*
 
 <p float="center">
   <img src="Figures/het_resid_chickage.png" width="600" />
 </p>
 
 
-Covariance between yearly intercept and random slopes for chicks and chickage
+*Covariance between yearly intercept and random slopes for chicks and chickage*
 
 
 <p float="center">
