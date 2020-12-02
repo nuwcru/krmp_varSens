@@ -46,7 +46,7 @@ Investigating variance sensitivity among breeding Peregrine Falcons in response 
 
 <br />
 
-## Current status
+### Current status
 
 **02_jags_gaus.R** runs the most up-to-date model based on comments from Kim / Rebekah.
 
@@ -56,7 +56,7 @@ The model includes
 * The model also estimates **independent residual variance by year**, but this can be commented out if need be. It's important to note that estimating residual variance independantly by year eats into the variation explained by other parameters such as chicks and chickage. This is demonstrated below.
 
 
-### Heterogenous Residuals
+# Heterogenous Residuals
 
 This is the 02_jags_gaus model with heterogenous residuals turned on. 
 
@@ -83,7 +83,7 @@ This is the 02_jags_gaus model with heterogenous residuals turned on.
 
 
 
-### Homogenous Residuals
+# Homogenous Residuals
 
 If we assume residual variance is homogenous across years, varying slopes for chickage then steps up to capture that yearly variation.
 
