@@ -97,7 +97,18 @@ We plot the residuals by year below to see if there are yearly patterns not expl
   <img src="Figures/hom_residuals.png" width="800" />
 </p>
 
+Still moderate covariance between intercepts and slope, and the covariance is in the direction you would hypothesize, lower intercept leads to more pronounced decrease in IVI as brood size increases. 
+<p float="center">
+  <img src="Figures/hom_resid_covariance.png" width="600" />
+</p>
 
+
+
+
+
+### Conclusion
+
+Residual variance among years is captured by letting our slopes and intercepts vary by year. Moderate covariance between yearly 
 
 ### Contributors
 * Rebekah McKinnon
