@@ -310,7 +310,11 @@ resids <- het_mcmc %>%
 
 
 nd <- cbind(d, resids)
-
+install.packages("ggmap")
+library(ggmap)
+ph_basemap <- get_map(location=c(lon = mean(nd$long), lat = mean(d$lat)), zoom=11, maptype = 'terrain-background', source = 'stamen')
+?register_google
+ggmap(ph_basemap)
 nd %>% 
   ggplot() +
   geom_hline(yintercept = 0, linetype = "dashed", colour = blue5) +
@@ -321,6 +325,28 @@ nd %>%
   xlab("y_i") + ylab("Residual") +
   facet_grid(year~.) +
   theme_nuwcru() + facet_nuwcru()
+
+# Spatial patterns in residuals by year
+nd %>% group_by(lat, long, site, year) %>% 
+  summarize(scale = mean(abs(mode)), # the absolute error for a specific site
+            dir = sum(mode)) %>%    # the direction of the error (neg or pos)
+  ggplot() +
+  geom_point(aes(x = long, y = lat, size = (1+scale)^4, fill = dir), shape = 21, colour = grey4) +
+  scale_fill_distiller(palette = "Spectral") + 
+  xlab("") + ylab("") +
+  facet_grid(~year) +
+  theme_nuwcru() + facet_nuwcru() + theme(legend.position = "bottom")
+
+# overall spatial patterns in residuals
+nd %>% group_by(lat, long, site) %>% 
+  summarize(scale = mean(abs(mode)), # the absolute error for a specific site
+            dir = sum(mode)) %>%    # the direction of the error (neg or pos)
+  ggplot() +
+  geom_point(aes(x = long, y = lat, size = (1+scale)^4, fill = dir), shape = 21, colour = grey4) +
+  scale_fill_distiller(palette = "Spectral") + 
+  xlab("") + ylab("") +
+  theme_nuwcru() + facet_nuwcru() + theme(legend.position = "bottom")
+  
 
 # * Ranef Covariance --------------------------------------------------------
 het_mcmc %>%
@@ -334,15 +360,27 @@ het_mcmc %>%
                color = "transparent", fill = blue2, alpha = 5/10) +
   geom_density(aes(x = rho_int_chicks),
                color = "transparent", fill = red2, alpha = 5/10) +
-  annotate(geom = "text", x = 0.6, y = 1.75, 
-           label = "a_year | B_chickage", color = blue2, family = "Courier") +
-  annotate(geom = "text", x = 0.6, y = 2, 
-           label = "a_year | B_chicks", color = red2, family = "Courier") +
-  scale_y_continuous(limits = c(0, 2.5)) +
+  annotate(geom = "text", x = 0.2, y = 1.00, 
+           label = "a_year ~ B_chickage", color = blue2, family = "Courier") +
+  annotate(geom = "text", x = -0.5, y = 1.2, 
+           label = "a_year ~ B_chicks", color = red2, family = "Courier") +
+  # scale_y_continuous(limits = c(0, 2.5)) +
   labs(subtitle = "Posterior distributions for correlations\nbetween intercepts and slopes",
        x = "correlation") +
   theme_nuwcru()
 
+
+"mu_int", 
+"mu_chickage", 
+"mu_chicks", 
+het_mcmc %>%
+  window(thin=10) %>% 
+  
+  # sigma = the yearly residual variance, a = random intercept for site, g = random intercept for yearsite
+  tidybayes::spread_draws(mu_int, mu_chickage, mu_chicks) %>%
+  ggplot() +
+  geom_point(aes(x = mu_chicks, y = mu_int)) +
+  theme_nuwcru()
 
 # * Parm Estimates ----------------------------------------------------------
 
