@@ -108,7 +108,7 @@ Still moderate covariance between intercepts and slope, and the covariance is in
 
 ### Conclusion
 
-Residual variance among years is captured by letting our slopes and intercepts vary by year. Moderate covariance between yearly 
+Residual variance among years is captured by letting our slopes and intercepts vary. Moderate covariance between yearly intercepts and slopes.
 
 ### Contributors
 * Rebekah McKinnon
