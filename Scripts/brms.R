@@ -41,7 +41,7 @@ d <- d %>% filter(!is.na(chicks) & !is.na(chickage) & !is.na(ivi))
 # chicks + chickage as fixed, but we also will allow their slopes to vary for each year. 
 # We'll also allow correlation between the intercepts and slopes as per kim.
 # using the log transformed to keep things simple
-fit1 <- brm(logIVI ~ 1 + chicks + chickage + (1 + chicks + chickage | year ),
+fit1 <- brm(logIVI ~ 1 +  (1 + chicks + chickage | year ),
             data = d, 
             # you can delete this prior section, brms will automatically pick some uninformative priors for you
             prior = c(#set_prior("normal(0,5)", class = "b"),
@@ -177,7 +177,7 @@ posterior_samples(fit1) %>%
 
 
 
-
+ranef(fit1)
 
 
 # Posterior prediction ----------------------------------------------------

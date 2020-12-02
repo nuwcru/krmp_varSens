@@ -11,6 +11,12 @@ library(ggplot2)
 library(tidyverse)
 library(bayesm)
 library(lme4)
+library(tidybayes)
+
+getmode <- function(x) {
+  uniqx <- unique(x)
+  uniqx[which.max(tabulate(match(x, uniqx)))]
+}
 
 
 # make sure these transformations are what you want
@@ -24,7 +30,13 @@ d <- read_csv("Data/ivi_eh.csv") %>%
          yearsite_f = as.factor(yearsite))
 
 d <- d %>% filter(!is.na(chicks) & !is.na(chickage) & !is.na(logIVI))
-dim(d)
+
+d <- read_csv("/Volumes/GoogleDrive/My Drive/NuWCRU/Analysis/emhedlin/pefa.surv/data/sites.csv") %>% 
+  select(site = SiteID, lat = SiteLatitudeDD , long = SiteLongitudeDD) %>%
+  mutate(site = as.factor(site)) %>% 
+  right_join(d, by = "site")
+
+
 # change to factors, and calculate unique levels of randoms
 
 # lengths to use for jags
@@ -40,6 +52,8 @@ jags_data <- list(y           = d$logIVI,    # ivi
                   chickage    = d$chickage,   # vector of chickages
                   chicks      = d$chicks,     # vector of brood sizes
                   years       = d$year,      # year identifier for variance
+                  nest        = d$site,
+                  n_nests     = n_nests,
                   n_years     = n_years,      # number of years
                   N           = nrow(d),      # sample size
                   W           = diag(3))      # wishart matrix
@@ -92,25 +106,6 @@ cat("
             b_chicks[j]   <- xi[3] * B_raw[j, 3]
         }  
     
-    
-      # Likelihood ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-         for (i in 1:N) {
-         mu_obs[i] <- a_year[years[i]] + b_chickage[years[i]] * chickage[i] + b_chicks[years[i]] * chicks[i]
-         y[i] ~ dnorm(mu_obs[i], tau[years[i]])
-         }
-
-      # homogenous residuals - het residuals defined on line 132
-       # sigma_res ~ dunif(0, 100) # Residual standard deviation
-       # tau_res   <- 1 / (sigma_res * sigma_res)
-    
-     # het residuals - prior for residual variance weighting matrix
-        for (i in 1:n_years){
-        chSq[i]  ~ dgamma(0.5, 0.5)
-        z[i]     ~ dnorm(0, 0.04)I(0,)
-        sigma_resid[i] <- z[i] / sqrt(chSq[i])
-        tau[i]   <- pow(sigma_resid[i], -2)
-        }
-    
     # Priors ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
         for (i in 1:3) {
             xi_prior[i] ~ dunif(0, 100)
@@ -139,6 +134,33 @@ cat("
         rho_int_chickage_prior    <- rho_prior[1, 2]
         rho_int_chicks_prior      <- rho_prior[1, 3]
         rho_chickage_chicks_prior <- rho_prior[2, 3]
+    
+    # Prior for random intercept at the nest level, not inducing correlation
+        for (i in 1:n_nests) {a_nest[i] ~ dnorm(a_bar_nest, a_sigma_nest)}
+        a_bar_nest ~ dnorm(0, 1.5)
+        a_sigma_nest ~ dexp(1)
+    
+      # Likelihood ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+         for (i in 1:N) {
+         mu_obs[i] <- a_nest[nest[i]] + a_year[years[i]] + b_chickage[years[i]] * chickage[i] + b_chicks[years[i]] * chicks[i]
+         y[i] ~ dnorm(mu_obs[i], tau_res)
+         }
+      # Residuals    
+        for (i in 1:N) {res[i] <- y[i] - mu_obs[i]}
+
+      # homogenous residuals - het residuals defined on line 132
+       sigma_res ~ dunif(0, 100) # Residual standard deviation
+       tau_res   <- 1 / (sigma_res * sigma_res)
+    
+     # het residuals - prior for residual variance weighting matrix
+       # for (i in 1:n_years){
+       # chSq[i]  ~ dgamma(0.5, 0.5)
+       # z[i]     ~ dnorm(0, 0.04)I(0,)
+       # sigma_resid[i] <- z[i] / sqrt(chSq[i])
+       # tau[i]   <- pow(sigma_resid[i], -2)
+       # }
+    
+
 
     }
 ", fill = TRUE)
@@ -146,6 +168,7 @@ sink()
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+# estimate starting values with lme4
 lme_fit <- lme4::lmer(logIVI ~ 1 + chickage + chicks + (1 + chickage + chicks | year), data = d)
 var_vec <- apply(coef(lme_fit)$year, 2, var)
 
@@ -168,11 +191,15 @@ params <- c("mu",
             "sigma_int", 
             "sigma_chickage", 
             "sigma_chicks", 
-            "sigma_resid",
+            "res",
+            #"sigma_resid",
             "rho", 
             "rho_int_chickage", 
             "rho_int_chicks", 
             "rho_chickage_chicks", 
+            "a_bar_nest",
+            "a_sigma_nest",
+            "a_nest",
             "b_chickage", 
             "b_chicks", 
             "mu_int_prior", 
@@ -197,32 +224,29 @@ het_m1   <- jags(data      = jags_data,
                  n.iter     = 7000)
 
 het_m2 <- update(het_m1, n.iter = 10000, n.thin = 10) 
-het_m3 <- update(het_m2, n.iter = 20000, n.thin = 10) 
+het_m3 <- update(het_m2, n.iter = 10000, n.thin = 10) 
 het_m4 <- update(het_m3, n.iter = 20000, n.thin = 10) 
+het_m5 <- update(het_m4, n.iter = 20000, n.thin = 10) 
 
 
 
 
 
 
-# Trace Plots -------------------------------------------------------------
+# Model Fitting Diagnostics -----------------------------------------------
+
+
+# * Trace Plots -------------------------------------------------------------
 
 ## Parameters ##
 # sigma_resid - yearly residual variance
 
-# off diagonal covariances between ranefs
-# rho[1,3]
-# rho[1,2]
-# rho[2,1]
-# rho[2,3]
-# rho[3,1]
-# rho[3,2]
 
-# rho_int_chickage
-# rho_int_chicks
-# rho_chickage_chicks
+# rho_int_chickage      - correlation between yearly intercept and beta_chickage
+# rho_int_chicks        - correlation between yearly intercept and chicks
+# rho_chickage_chicks   - correlation between beta_chicks and beta_chickage
 
-het_mcmc <- as.mcmc(het_m3) #change back to 4 later 
+het_mcmc <- as.mcmc(het_m2) #change back to 4 later 
 
 
 het_mcmc %>%
@@ -244,9 +268,9 @@ het_mcmc %>%
 
 
 
-# Rhat --------------------------------------------------------------------
+# * Rhat --------------------------------------------------------------------
 
-
+?rhat
 rhat(het_mcmc) %>% 
   data.frame() %>% 
   rownames_to_column() %>% 
@@ -266,8 +290,39 @@ rhat(het_mcmc) %>%
         axis.text.y     = element_text(hjust = 0))
 
 
+# N Eff Size --------------------------------------------------------------
 
-# Ranef Covariance --------------------------------------------------------
+# to fill in
+
+
+# Model Inference ---------------------------------------------------------
+
+
+# * Residuals -------------------------------------------------------------
+
+resids <- het_mcmc %>%
+  spread_draws(res[i]) %>%
+  group_by(i) %>%
+  summarize(mode = getmode(res), sd = sd(res)) %>%
+  mutate(upper95 = mode + (1.96 * sd), lower95 = mode - (1.96 * sd),
+         upper80 = mode + (1.282 * sd), lower80 = mode - (1.282 * sd),
+         upper50 = mode + (0.674 * sd), lower50 = mode - (0.674 * sd))
+
+
+nd <- cbind(d, resids)
+
+nd %>% 
+  ggplot() +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = blue5) +
+  geom_segment(aes(x = logIVI, xend = logIVI, y = lower95, yend = upper95), colour = "#DFEBF7", size = 1.3) +
+  geom_segment(aes(x = logIVI, xend = logIVI, y = lower80, yend = upper80), colour = "#A5CADF", size = 1.3) +
+  geom_segment(aes(x = logIVI, xend = logIVI, y = lower50, yend = upper50), colour = "#4A84BD", size = 1.3) +
+  geom_point(aes(x = logIVI, y = mode), shape = 21, colour = blue1, size = 1) +
+  xlab("y_i") + ylab("Residual") +
+  facet_grid(year~.) +
+  theme_nuwcru() + facet_nuwcru()
+
+# * Ranef Covariance --------------------------------------------------------
 het_mcmc %>%
   window(thin=10) %>% 
   
@@ -289,7 +344,7 @@ het_mcmc %>%
   theme_nuwcru()
 
 
-# Parm Estimates ----------------------------------------------------------
+# * Parm Estimates ----------------------------------------------------------
 
 
 
@@ -332,44 +387,74 @@ arrow::write_parquet(all, "data/jags_out_gamma.parquet")
 
 
 
-
-
-
-# Posterior Prediction ----------------------------------------------------
-
-getmode <- function(x) {
-  uniqx <- unique(x)
-  uniqx[which.max(tabulate(match(x, uniqx)))]
-}
-
-
-
-m1 <-
-  coef(fit1)$year[ , 1, 1:3] %>%
-  as_tibble() %>%               
-  mutate(year = 2013:2019) %>%  
-  select(year, everything())    
-
-
-d %>%
-  tidyr::expand(chickage = 1:12, chicks = 1:4, year = 2013:2019) %>%
-  tidybayes::add_predicted_draws(fit1, n = 100) %>%
-  group_by(chickage, year) %>%
-  summarize(mode = mean(.prediction),
-            sd = sd(.prediction)) %>%
-  mutate(upper95 = mode + (sd*1.96),
-         upper80 = mode + (sd*1.282),
-         upper50 = mode + (sd*0.674),
-         lower95 = mode - (sd*1.96),
-         lower80 = mode - (sd*1.282),
-         lower50 = mode - (sd*0.674)) %>%
+# Sigmas ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Sigma as a ratio to 2013 (reference)
+# dimension exported: 1200 x 804
+het_mcmc %>%
+  tidybayes::spread_draws(sigma_resid[i]) %>%
+  group_by(i) %>%
+  summarize(mode = getmode(sigma_resid), sd = sd(sigma_resid)) %>%
+  mutate(upper95 = mode + (1.96 * sd), lower95 = mode - (1.96 * sd),
+         upper80 = mode + (1.282 * sd), lower80 = mode - (1.282 * sd),
+         upper50 = mode + (0.674 * sd), lower50 = mode - (0.674 * sd)) %>%
   ggplot() +
-  geom_ribbon(aes(x = chickage, ymin = lower95, ymax = upper95), fill = red5, alpha = 0.4) +
-  geom_ribbon(aes(x = chickage, ymin = lower80, ymax = upper80), fill = red4, alpha = 0.5) +
-  geom_ribbon(aes(x = chickage, ymin = lower50, ymax = upper50), fill = red3, alpha = 0.8) +
-  geom_line(aes(x = chickage, y = mode), colour = red1) +
-  facet_grid(~year) +
-  theme_nuwcru() 
+  geom_hline(yintercept = 2013:2019, colour = grey8, alpha = 0.5) +
+  geom_vline(xintercept = 1, colour = grey6, linetype = "dashed") +
+  geom_segment(aes(x = lower95, xend = upper95, y = 2013:2019, yend = 2013:2019), colour = "#DFEBF7", size = 2) +
+  geom_segment(aes(x = lower80, xend = upper80, y = 2013:2019, yend = 2013:2019), colour = "#A5CADF", size = 2) +
+  geom_segment(aes(x = lower50, xend = upper50, y = 2013:2019, yend = 2013:2019), colour = "#4A84BD", size = 2) +
+  geom_point(aes(y = 2013:2019, x = mode), shape = "|",  colour = "white", size = 5) +
+  ylab("") + xlab("Yearly Sigma (residual variance)") +
+  scale_x_continuous(limits = c(0.75,1.43)) +
+  scale_y_continuous(breaks = 2013:2019) +
+  theme_nuwcru() + 
+  theme(panel.border = element_blank(),
+        #axis.line.x = element_blank(),
+        axis.line.y = element_blank(),
+        axis.ticks.y = element_blank())
+
+
+# Betas ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Sigma as a ratio to 2013 (reference)
+# dimension exported: 1200 x 804
+het_mcmc %>%
+  tidybayes::spread_draws(b_chickage[i], b_chicks[i]) %>%
+  group_by(i) %>%
+  summarize(mode_chickage = getmode(b_chickage), sd_chickage = sd(b_chickage),
+            mode_chicks = getmode(b_chicks), sd_chicks = sd(b_chicks)) %>%
+  mutate(upper95_chickage = mode_chickage + (1.96 * sd_chickage),  lower95_chickage = mode_chickage - (1.96 * sd_chickage),
+         upper80_chickage = mode_chickage + (1.282 * sd_chickage), lower80_chickage = mode_chickage - (1.282 * sd_chickage),
+         upper50_chickage = mode_chickage + (0.674 * sd_chickage), lower50_chickage = mode_chickage - (0.674 * sd_chickage)) %>%
+  mutate(upper95_chicks = mode_chicks + (1.96 * sd_chicks),  lower95_chicks = mode_chicks - (1.96 * sd_chicks),
+         upper80_chicks = mode_chicks + (1.282 * sd_chicks), lower80_chicks = mode_chicks - (1.282 * sd_chicks),
+         upper50_chicks = mode_chicks + (0.674 * sd_chicks), lower50_chicks = mode_chicks - (0.674 * sd_chicks)) %>%
+
+  ggplot() +
+  geom_hline(yintercept = 2013:2019, colour = grey8, alpha = 0.5) +
+  geom_vline(xintercept = 0, colour = grey6, linetype = "dashed") +
+  
+  # Plot chickage betas
+  geom_segment(aes(x = lower95_chickage, xend = upper95_chickage, y = 2013:2019, yend = 2013:2019), colour = "#DFEBF7", size = 2) +
+  geom_segment(aes(x = lower80_chickage, xend = upper80_chickage, y = 2013:2019, yend = 2013:2019), colour = "#A5CADF", size = 2) +
+  geom_segment(aes(x = lower50_chickage, xend = upper50_chickage, y = 2013:2019, yend = 2013:2019), colour = "#4A84BD", size = 2) +
+  geom_point(aes(y = 2013:2019, x = mode_chickage), shape = "|",  colour = "white", size = 5) +
+  
+  # Plot Chicks betas
+  #geom_segment(aes(x = lower95_chicks, xend = upper95_chicks, y = 2013.2:2019.2, yend = 2013.2:2019.2), colour = "#e2b6b6", size = 2) +
+  #geom_segment(aes(x = lower80_chicks, xend = upper80_chicks, y = 2013.2:2019.2, yend = 2013.2:2019.2), colour = "#c76f6f", size = 2) +
+  #geom_segment(aes(x = lower50_chicks, xend = upper50_chicks, y = 2013.2:2019.2, yend = 2013.2:2019.2), colour = "#7f1111", size = 2) +
+  #geom_point(aes(y = 2013.2:2019.2, x = mode_chicks), shape = "|",  colour = "white", size = 5) +
+  
+  
+  ylab("") + xlab("
+                  chickage") +
+  #scale_x_continuous(limits = c(0.75,1.43)) +
+  scale_y_continuous(breaks = 2013:2019) +
+  theme_nuwcru() + 
+  theme(panel.border = element_blank(),
+        #axis.line.x = element_blank(),
+        axis.line.y = element_blank(),
+        axis.ticks.y = element_blank())
 
 
 

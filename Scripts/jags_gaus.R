@@ -35,7 +35,7 @@ d$chicks
 
 # model matrix used to store betas
 
-X <- model.matrix(~ 1 + chickage + chicks, data = d)
+X <- model.matrix(~ 1 + chickage:year + chicks:year, data = d)
 
 
 jags_data <- list(y           = d$logIVI,    # ivi 

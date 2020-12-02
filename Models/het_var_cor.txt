@@ -43,25 +43,6 @@
             b_chicks[j]   <- xi[3] * B_raw[j, 3]
         }  
     
-    
-      # Likelihood ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-         for (i in 1:N) {
-         mu_obs[i] <- a_year[years[i]] + b_chickage[years[i]] * chickage[i] + b_chicks[years[i]] * chicks[i]
-         y[i] ~ dnorm(mu_obs[i], tau[years[i]])
-         }
-
-      # homogenous residuals - het residuals defined on line 132
-       # sigma_res ~ dunif(0, 100) # Residual standard deviation
-       # tau_res   <- 1 / (sigma_res * sigma_res)
-    
-     # het residuals - prior for residual variance weighting matrix
-        for (i in 1:n_years){
-        chSq[i]  ~ dgamma(0.5, 0.5)
-        z[i]     ~ dnorm(0, 0.04)I(0,)
-        sigma_resid[i] <- z[i] / sqrt(chSq[i])
-        tau[i]   <- pow(sigma_resid[i], -2)
-        }
-    
     # Priors ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
         for (i in 1:3) {
             xi_prior[i] ~ dunif(0, 100)
@@ -90,6 +71,33 @@
         rho_int_chickage_prior    <- rho_prior[1, 2]
         rho_int_chicks_prior      <- rho_prior[1, 3]
         rho_chickage_chicks_prior <- rho_prior[2, 3]
+    
+    # Prior for random intercept at the nest level, not inducing correlation
+        for (i in 1:n_nests) {a_nest[i] ~ dnorm(a_bar_nest, a_sigma_nest)}
+        a_bar_nest ~ dnorm(0, 1.5)
+        a_sigma_nest ~ dexp(1)
+    
+      # Likelihood ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+         for (i in 1:N) {
+         mu_obs[i] <- a_nest[nest[i]] + a_year[years[i]] + b_chickage[years[i]] * chickage[i] + b_chicks[years[i]] * chicks[i]
+         y[i] ~ dnorm(mu_obs[i], tau_res)
+         }
+      # Residuals    
+        for (i in 1:N) {res[i] <- y[i] - mu_obs[i]}
+
+      # homogenous residuals - het residuals defined on line 132
+       sigma_res ~ dunif(0, 100) # Residual standard deviation
+       tau_res   <- 1 / (sigma_res * sigma_res)
+    
+     # het residuals - prior for residual variance weighting matrix
+       # for (i in 1:n_years){
+       # chSq[i]  ~ dgamma(0.5, 0.5)
+       # z[i]     ~ dnorm(0, 0.04)I(0,)
+       # sigma_resid[i] <- z[i] / sqrt(chSq[i])
+       # tau[i]   <- pow(sigma_resid[i], -2)
+       # }
+    
+
 
     }
 

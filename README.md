@@ -1,14 +1,11 @@
-#### Contents
-[Modeling Real Data](#Heterogenous-residual-variance-by-year) |
-[Modeling simulated data](#Simulations) 
 
 ## Variance Sensitivity
 
 ### To Do
-- [ ] clean repo
-- [ ] re-calculate IVI
-- [ ] translate jags to gamma distribution
-- [ ] incorporate random slope / intercept for year with correlation
+- [x] clean repo
+- [x] re-calculate IVI
+- [x] translate jags to gamma distribution
+- [x] incorporate random slope / intercept for year with correlation
 - [ ] examine brood mass options
 
 
@@ -21,8 +18,8 @@ Investigating variance sensitivity among breeding Peregrine Falcons in response 
 ```
 ├── Data
 │     ├── Clean IVI years 2013-2019.csv  <- data used for analysis - cleaned by Rebekah
-│     ├── 
-│     ├── 
+│     ├── ivi_eh.csv                     <- new ivi data with fixed errors
+│     ├── ____ .parquet                  <- all parquet files are jags outputs converted to dataframes for easy manipulation/viz
 │     ├── 
 │     ├── 
 │     └── 
@@ -30,7 +27,12 @@ Investigating variance sensitivity among breeding Peregrine Falcons in response 
 │     ├──  simulation.R         <- simulate data to ensure variance is being captured properly by whatever model we use
 │     │                            - nlme model for simplicity / jags for thorough understanding and benefits from bayesian framework
 │     ├──  jags.R               <- Real Data using similar model structure to that tested in simulation.R
-│     └──  ivi_scratch.R        <- Programmatically calculate IVI
+│     ├──  jags_v_lme4.R        <- Comparisons between lme4 and jags models
+│     ├──  jags_gamma.R         <- Gamma distribution, heterogenous resids, random intercepts 
+│     ├──  jags_gaus.R          <- log transformed ivi, heterogenous resids, random intercepts
+│     ├──  02_jags_gaus.R       <- log transformed ivi, het resids, random intercepts, random slopes and correlation between ranefs
+│     ├──  brms.R               <- 02_jags_gaus.R model minus het resids. Quick modeling of ranef covariance using lme4 syntax, with a stan backend
+│     └──  ivi_scratch.R        <- Programmatically calculate IVI, produces ivi_eh.csv
 └── Figures
       ├── beta_chickage.jpg     <- from jags.R - het resid variance by year
       ├── betas_broodsize.jpg   <- from jags.R - het resid variance by year
@@ -44,267 +46,55 @@ Investigating variance sensitivity among breeding Peregrine Falcons in response 
 
 <br />
 
-# Heterogenous residual variance by year
+### Current status
+
+**02_jags_gaus.R** runs the most up-to-date model based on comments from Kim / Rebekah.
+
+The model includes 
+* **random intercept** for year and nest site, and **random slopes** for chickage and chicks nested in years. 
+* The model estimates ranef from a **covariance matrix of slopes/intercepts** which allows us to estimate the level of covariance between yearly intercepts and the effects of chickage/chicks. 
+* The model also estimates **independent residual variance by year**, but this can be commented out if need be. It's important to note that estimating residual variance independantly by year eats into the variation explained by other parameters such as chicks and chickage. This is demonstrated below.
 
 
-The code for this model is in ```scripts/jags.R```
+# Heterogenous Residuals
 
+This is the 02_jags_gaus model with heterogenous residuals turned on. 
 
+*Residual variance by year. The estimate visualized here is sigma, and associated uncertainty in the estimate of sigma stemming from the shape of the posterior:*
 
-```r
-# Fixed effects
-X <- model.matrix(~ 1 + chickage:year_f + chicks:year_f, data = only_unsupp)
-
-# all data going into model below
-jags_data <- list(y = only_unsupp$logIVI,     # ivi 
-                  years = only_unsupp$year_f, # year identifier for variance
-                  nest = nestID,              # random intercept for nest
-                  yearsite = yearsite_f,      # random intercept for yearsite
-                  n_years = n_years,          # number of years
-                  n_nests = n_nests,          # number of nests
-                  n_yearsites = n_yearsites,  # number of unique yearsites
-                  X = X,                      # intercept + covariates (model matrix)
-                  N = nrow(only_unsupp),      # sample size
-                  K = ncol(X))                # Number of betas
-```
-<br />
-
-## Model
-```
-    # Likelihood ~~~~~~~~~~~~~
-    
-        for (i in 1:N) {
-          y[i]  ~ dnorm(mu[i], tau[years[i]])
-          mu[i] <- inprod(beta[], X[i,]) + a[nest[i]] + g[yearsite[i]]
-        
-        # store predicted values at each iteration in y_pred
-        y_pred[i] ~ dnorm(mu[i], tau[years[i]])
-        }
-    
-    # Priors ~~~~~~~~~~~~~~~
-        
-     # priors for betas
-        for (i in 1:K) {beta[i] ~ dnorm(0,0.001)}
-        
-     # prior for residual variance weighting matrix
-        for (i in 1:n_years){
-        chSq[i]  ~ dgamma(0.5, 0.5)
-        z[i]     ~ dnorm(0, 0.04)I(0,)
-        sigma[i] <- z[i] / sqrt(chSq[i])
-        tau[i]   <- pow(sigma[i], -2)
-        }
-
-    
-     # prior for random intercepts, a = site, g = yearsite
-        for (i in 1:n_nests) {a[i] ~ dnorm(a_bar, sigma_nest)}
-        for (i in 1:n_yearsites) {g[i] ~ dnorm(g_bar, sigma_yearsite)}
-    
-     # prior for mean/variance of random intercepts
-        a_bar ~ dnorm(0, 1.5)
-        sigma_nest ~ dexp(1)
-        g_bar ~ dnorm(0, 1.5)
-        sigma_yearsite ~ dexp(1)
-        
-```
-
-
-<br />
-
-## Betas
-* Dark blue = 50% CI
-* Med blue = 80% CI
-* light blue = 95% CI
-
-<p align="center">
-  <img width="800" src="https://github.com/nuwcru/krmp_varSens/blob/master/Figures/beta_chickage.jpeg">
-   <img width="800" src="https://github.com/nuwcru/krmp_varSens/blob/master/Figures/betas_broodsize.jpeg">
+<p float="center">
+  <img src="Figures/het_resid.png" width="600" />
 </p>
 
-<br />
+*The effect of chickage within the same model where yearly variation in the effect of chickage is captured by the random slope.*
 
-## Sigma - yearly residual variance
-
-logIVI_i ~ N(mu_i, sigma^2_year)
-
-Below we're plotting the estimated sigma (+/- credibles) as a ratio to the reference group which is 2013 in this case. Estimates to the right of 1 (dashed line) had greater residual variance than 2013. Estimates to the left had less residual variance. Some interesting results, maybe we can explore different ways of modeling these residuals. Still model them at the yearly level, but instead of using year, generate a metric that summarizes the yearly conditions. This may be more informative and match residual variance patterns better than a binned category like year: logIVI_i ~ N(mu_i, sigma^2_yearly-conditions)
-
-<p align="center">
-  <img width="800" src="https://github.com/nuwcru/krmp_varSens/blob/master/Figures/sigma_CIs.jpeg">
-</p>
-
-### Comparison with multiple lme4 models
-
-Here's the code to model every year separately, and then run sims on the data to get posterior distributions (pseudo posterior?):
-
-```r
-
-# function to calculate mode from our posteriors
-getmode <- function(x) {
-  uniqx <- unique(x)
-  uniqx[which.max(tabulate(match(x, uniqx)))]
-}
-
-
-# model each year in lme4, and store in a list
-year <- d %>% group_split(year)
-
-model_outs <- lapply(year, function(x){ 
-  lmer(logIVI ~ chicks + chickage + (1|site), x)})
-
-# as an example, you can pull out any year
-model_outs[[1]] # this is 2013
-model_outs[[2]] # this is 2014, and so on...
-
-
-
-
-# simulate all years in the list
-sim <- lapply(model_outs, function(x){
-        sim(x, n.sims=10000)})
-
-
-
-# pull out yearly residual variance
-yearly_resid <- lapply(sim, function(x){
-  as.mcmc(x@sigma^2)})
-
-
-
-# create empty dataframe that will store information about our posteriors
-nd <- data.frame(year = 2013:2019,
-                 post_mode= rep(NA, length(2013:2019)),
-                 sd       = rep(NA, length(2013:2019)),
-                 lower    = rep(NA, length(2013:2019)),
-                 upper    = rep(NA, length(2013:2019)))
-
-for (i in 1:length(yearly_resid)){
-      nd[i,]$post_mode <- getmode(as.numeric(yearly_resid[[i]]))
-      nd[i,]$sd <- sd(as.numeric(yearly_resid[[i]]))
-      nd[i,]$lower <- nd[i,]$post_mode - (1.96*nd[i,]$sd)
-      nd[i,]$upper <- nd[i,]$post_mode + (1.96*nd[i,]$sd)
-}
-
-```
-
-
-Then if we plot the mode of yearly residual variance posterios, and +/- 95% credibles we get:
-lme4 models are in red, and the single jags model is in blue.
-
-<p align="center">
-  <img width="800" src="https://github.com/nuwcru/krmp_varSens/blob/master/Figures/jags_comparison.png">
+<p float="center">
+  <img src="Figures/het_resid_chickage.png" width="600" />
 </p>
 
 
-<br />
+*Covariance between yearly intercept and random slopes for chicks and chickage*
 
-## Predicted vs. real IVI (posterior predictive checks)
 
-Real logIVI values are plotted as points, and the relationship with the respective covariate is plotted as a trend with credible intervals.
-
-<p align="center">
-  <img width="800" src="https://github.com/nuwcru/krmp_varSens/blob/master/Figures/chickage-year.jpeg">
-   <img width="800" src="https://github.com/nuwcru/krmp_varSens/blob/master/Figures/broodsize-year.jpeg">
-</p>
-
-<br />
-<br />
-
-### Thoughts
-
-```
-How do you know that your model is right? 
-When the residuals contain no information.  
-
-How do you know that your model is good enough?  
-When the residuals contain no information _that you can resolve_.
-```
-- [Box and Tiao](https://www.amazon.ca/Bayesian-Inference-Statistical-Analysis-George/dp/0471574287)
-
-I think there's still some information in the residuals that we can model - which may be a good opportunity to introduce yearly environmental conditions. Might be some autoregressive covariance that we have to deal with as well. I wouldn't be surprised if IVI's were were correlated with previous IVI's up to a certain point.
-
-<br />
-
-# Simulations
-
-#### Gaussian distributed IVI - heterogenous residual variance among years
-
-Simulate data and specify covariate effect sizes. We want residual variance to depend on year, so we'll draw residuals from a normal distribution N(0, sigma_year). The specific sigma associated with each year is defined in the vector, ```eps_sigma```.
-
-##### simulate data
-```r
-b1       <- -1                # beta for chickage
-b2       <- -2                # beta for broodsize
-intercept <- 15               # intercept
-eps_sigma = c(1,5,2,9,3,8,3)  # yearly variation in IVI
-
-for (i in 1:nrow(d)){ 
-      d$ivi[i] <- intercept + d$b0_nest[i] + b1 * d$chickage[i] + b2 * d$broodsize[i] + rnorm(1, 0, d$eps_sigma[i] + chickage*0.3)     
-    }
-```
-
-##### nlme
-```r
-m <- lme(ivi ~ chickage:year + broodsize:year,   
-         random = ~ 1 | nestID,           
-         weights = varIdent(form = ~ 1|year),
-         data = d)
- ```
-
-##### JAGS
-
-The variance structure is a bit hard to follow with all the priors, but what we're looking for is:
-
-<p align="left">
-  <img width="200" src="https://github.com/nuwcru/krmp_varSens/blob/master/documents/small.png">
-</p>
-
-```w``` is a weighting matrix, where the weights associated with each year are determined by the inverse of the ratio of each year to the first (reference) group.
-
-All paramters and associated priors (all diffuse):
-
-<p align="left">
-  <img width="400" src="https://github.com/nuwcru/krmp_varSens/blob/master/documents/het_var-model.png">
+<p float="center">
+  <img src="Figures/ranef_cov.png" width="600" />
 </p>
 
 
-And the JAGS model (for simplicity, all betas are packaged in a matrix together, and so are the covariate vectors):
 
-```model{
-    
-    # Likelihood ~~~~~~~~~~~~~
-    
-        for (i in 1:N) {
-          y[i]  ~ dnorm(mu[i], tau[years[i]])
-          mu[i] <- inprod(beta[], X[i,]) + a[nest[i]]
-    
-        y_pred[i] ~ dnorm(mu[i], tau[years[i]])
-        }
-    
-    # Priors ~~~~~~~~~~~~~~~
-    
-        for (i in 1:K) {beta[i] ~ dnorm(0,0.001)}
-        
-        for (i in 1:n_years){
-        chSq[i]  ~ dgamma(0.5, 0.5)
-        z[i]     ~ dnorm(0, 0.04)I(0,)
-        sigma[i] <- z[i] / sqrt(chSq[i])
-        tau[i]   <- pow(sigma[i], -2)
-        }
 
-    
-    # prior for random intercept
-        for (i in 1:n_nests) {a[i] ~ dnorm(a_bar, sigma_nest)}
-    
-    # prior for variance of random intercept
-        a_bar ~ dnorm(0, 1.5)
-        sigma_nest ~ dexp(1)
-        
-    }
-```
+# Homogenous Residuals
 
-Real IVI values plotted as points, mean predicted value from jags model, and credible intervals surrounding the mean. X axis is chickage.
-<p align="left">
-  <img width="800" src="https://github.com/nuwcru/krmp_varSens/blob/master/documents/yearly_variance.png">
+If we assume residual variance is homogenous across years, varying slopes for chickage then steps up to capture that yearly variation.
+
+<p float="center">
+  <img src="Figures/hom_resid_chickage.png" width="600" />
+</p>
+
+We plot the residuals by year below to see if there are yearly patterns not explained in the model. It looks pretty uniform
+
+<p float="center">
+  <img src="Figures/hom_residuals.png" width="800" />
 </p>
 
 
