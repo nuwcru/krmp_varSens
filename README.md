@@ -91,8 +91,11 @@ If we assume residual variance is homogenous across years, varying slopes for ch
   <img src="Figures/hom_resid_chickage.png" width="600" />
 </p>
 
-The next step is to examine residuals and ensure that they don't vary by year. 
+We plot the residuals by year below to see if there are yearly patterns not explained in the model. It looks pretty uniform
 
+<p float="center">
+  <img src="Figures/hom_residuals.png" width="800" />
+</p>
 
 
 
