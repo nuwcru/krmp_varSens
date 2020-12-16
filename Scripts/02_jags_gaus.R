@@ -31,6 +31,7 @@ d <- read_csv("Data/ivi_eh.csv") %>%
 
 d <- d %>% filter(!is.na(chicks) & !is.na(chickage) & !is.na(logIVI))
 
+# add lat long locations
 d <- read_csv("/Volumes/GoogleDrive/My Drive/NuWCRU/Analysis/emhedlin/pefa.surv/data/sites.csv") %>% 
   select(site = SiteID, lat = SiteLatitudeDD , long = SiteLongitudeDD) %>%
   mutate(site = as.factor(site)) %>% 
@@ -246,7 +247,7 @@ het_m5 <- update(het_m4, n.iter = 20000, n.thin = 10)
 # rho_int_chicks        - correlation between yearly intercept and chicks
 # rho_chickage_chicks   - correlation between beta_chicks and beta_chickage
 
-het_mcmc <- as.mcmc(het_m2) #change back to 4 later 
+het_mcmc <- as.mcmc(het_m4) #change back to 4 later 
 
 
 het_mcmc %>%
@@ -256,7 +257,7 @@ het_mcmc %>%
   tidybayes::gather_draws(b_chickage[i], b_chicks[i], rho_int_chickage, rho_int_chicks) %>%
   
   # change this filter to look at mixing for the parameter of interest. See above line for options
-  filter(.variable == "rho_int_chicks") %>% 
+  filter(.variable == "b_chicks") %>% 
   ungroup() %>%
   mutate(term = ifelse(is.na(i), .variable, paste0(.variable,"[",i,"]"))) %>%
   ggplot(aes(x=.iteration, y=.value, color=as.factor(.chain))) +
@@ -296,7 +297,7 @@ rhat(het_mcmc) %>%
 
 
 # Model Inference ---------------------------------------------------------
-
+get_map(location=c(lon = -75.16522, lat = 39.95258), zoom=11, maptype = 'terrain-background', source = 'stamen')
 
 # * Residuals -------------------------------------------------------------
 
@@ -308,23 +309,28 @@ resids <- het_mcmc %>%
          upper80 = mode + (1.282 * sd), lower80 = mode - (1.282 * sd),
          upper50 = mode + (0.674 * sd), lower50 = mode - (0.674 * sd))
 
-
 nd <- cbind(d, resids)
-install.packages("ggmap")
-library(ggmap)
-ph_basemap <- get_map(location=c(lon = mean(nd$long), lat = mean(d$lat)), zoom=11, maptype = 'terrain-background', source = 'stamen')
-?register_google
-ggmap(ph_basemap)
+
 nd %>% 
   ggplot() +
   geom_hline(yintercept = 0, linetype = "dashed", colour = blue5) +
-  geom_segment(aes(x = logIVI, xend = logIVI, y = lower95, yend = upper95), colour = "#DFEBF7", size = 1.3) +
-  geom_segment(aes(x = logIVI, xend = logIVI, y = lower80, yend = upper80), colour = "#A5CADF", size = 1.3) +
-  geom_segment(aes(x = logIVI, xend = logIVI, y = lower50, yend = upper50), colour = "#4A84BD", size = 1.3) +
-  geom_point(aes(x = logIVI, y = mode), shape = 21, colour = blue1, size = 1) +
+  #geom_segment(aes(x = logIVI, xend = logIVI, y = lower95, yend = upper95), colour = "#DFEBF7", size = 1.3) +
+  # geom_segment(aes(x = logIVI, xend = logIVI, y = lower80, yend = upper80), colour = "#A5CADF", size = 1.3) +
+  # geom_segment(aes(x = logIVI, xend = logIVI, y = lower50, yend = upper50), colour = "#4A84BD", size = 1.3) +
+  geom_point(aes(x = logIVI, y = mode),colour = grey6, alpha = 1, size = 0.5) +
+  geom_point(data = filter(nd, site == 8), aes(x = logIVI, y = mode),colour = blue2, alpha = 1, size =1) +
+  geom_rug(aes(x = logIVI, y = mode), col=grey4,alpha=0.1, size=.5) +
+  geom_rug(data = filter(nd, site == 8), aes(x = logIVI, y = mode), col=blue2,alpha=1, size=.5) +
   xlab("y_i") + ylab("Residual") +
-  facet_grid(year~.) +
+  facet_grid(~year) +
   theme_nuwcru() + facet_nuwcru()
+
+nd %>% filter(site == 8 & year == 2019) %>%
+  ggplot() +
+  geom_point(aes(x = date, y = ivi), size =2) +
+  # geom_point(aes(x = date, y = mode), colour = blue2, alpha = 1, size =2) +
+  theme_nuwcru()
+
 
 # Spatial patterns in residuals by year
 nd %>% group_by(lat, long, site, year) %>% 
@@ -346,7 +352,8 @@ nd %>% group_by(lat, long, site) %>%
   scale_fill_distiller(palette = "Spectral") + 
   xlab("") + ylab("") +
   theme_nuwcru() + facet_nuwcru() + theme(legend.position = "bottom")
-  
+register_google(key = "AIzaSyDZrHIIw5hd4e51oumP1p3-c-ZQD1EN-v0", write = TRUE)
+
 
 # * Ranef Covariance --------------------------------------------------------
 het_mcmc %>%

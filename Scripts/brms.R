@@ -5,21 +5,22 @@
 # to understand.
 
 
-
+install.packages("tictoc")
+install.packages("commandstanr")
 library(R2jags)
 library(nuwcru)
 library(dplyr)
 library(ggplot2)
 library(tidyverse)
-
-#install.packages("brms")
 library(brms)
-
 library(tidybayes)
 
 
+getmode <- function(x) {
+  uniqx <- unique(x)
+  uniqx[which.max(tabulate(match(x, uniqx)))]
+}
 
-# Data Load/prep ----------------------------------------------------------
 
 # make sure these transformations are what you want
 d <- read_csv("Data/ivi_eh.csv") %>% 
@@ -27,12 +28,17 @@ d <- read_csv("Data/ivi_eh.csv") %>%
   mutate(logIVI   = log(ivi),
          year     = as.factor(year),
          site     = as.factor(site),
-         chickage = chickage -1,  
+         # chickage = chickage -1,  
          site     = as.factor(site),
          yearsite_f = as.factor(yearsite))
 
-# remove NAs
-d <- d %>% filter(!is.na(chicks) & !is.na(chickage) & !is.na(ivi))
+d <- d %>% filter(!is.na(chicks) & !is.na(chickage) & !is.na(logIVI))
+
+# add lat long locations
+d <- read_csv("/Volumes/GoogleDrive/My Drive/NuWCRU/Analysis/emhedlin/pefa.surv/data/sites.csv") %>% 
+  select(site = SiteID, lat = SiteLatitudeDD , long = SiteLongitudeDD) %>%
+  mutate(site = as.factor(site)) %>% 
+  right_join(d, by = "site")
 
 
 # Models ------------------------------------------------------------------
@@ -41,6 +47,8 @@ d <- d %>% filter(!is.na(chicks) & !is.na(chickage) & !is.na(ivi))
 # chicks + chickage as fixed, but we also will allow their slopes to vary for each year. 
 # We'll also allow correlation between the intercepts and slopes as per kim.
 # using the log transformed to keep things simple
+
+tictoc::tic()
 fit1 <- brm(logIVI ~ 1 +  (1 + chicks + chickage | year ),
             data = d, 
             # you can delete this prior section, brms will automatically pick some uninformative priors for you
@@ -51,7 +59,9 @@ fit1 <- brm(logIVI ~ 1 +  (1 + chicks + chickage | year ),
             iter = 5000, 
             chains = 4,
             control = list(adapt_delta = 0.98),
+            backend = "cmdstanr",
             cores = 8)
+tictoc::toc()
 
 fit2 <- brm(logIVI ~ 1 +  chickage + (1 + chicks + chickage | year ),
             data = d, 
