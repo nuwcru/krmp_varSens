@@ -112,7 +112,7 @@ waic(m1_cor)
 # examine residuals ~~~~~~~~~~~~~~~~~~~~~~~~~
 # work in progress
 
-
+resids <- residuals(m1_cor, probs = c(0.05, 0.95))
 x <- cbind(d, resids)
 
 # something very wrong about 2019. That diagnoal line indicates an issue in the data. Error perfectly scales with logIVI in some case
