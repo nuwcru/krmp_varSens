@@ -5,10 +5,12 @@
 # to understand.
 
 
-install.packages("tictoc")
-install_cmdstan()
-set_cmdstan_path()
+# install.packages("tictoc")
+# install_cmdstan()
 library(cmdstanr)
+# install_cmdstan()
+set_cmdstan_path()
+
 library(R2jags)
 library(nuwcru)
 library(dplyr)
@@ -50,70 +52,126 @@ d <- read_csv("Data/sites.csv") %>%
 # We'll also allow correlation between the intercepts and slopes as per kim.
 # using the log transformed to keep things simple
 
-tictoc::tic()
-m1_cor <- brm(logIVI ~ 1 +  (1 + chicks + chickage | year ),   # linear model with random slopes for chicks and chickage nested in year
+# 2 models, both identical except m2 will allow heterogenous residual variance by year
+
+
+
+# * Priors ----------------------------------------------------------------
+# Sample from the prior only do get a sense of potential likelihood estimations
+
+
+
+
+# Homogenous variance by year
+m1_cor_prior <- brm(logIVI ~ 1 + chicks + chickage + (1 + chicks + chickage | year ),   # linear model with random slopes for chicks and chickage nested in year
             data = d, 
-            prior = c(#set_prior("normal(0,5)", class = "b"),
+            prior = c(set_prior("normal(0, 1)", class = "b"),
+                      set_prior("normal(5, 1)", class = "Intercept"),
+                      set_prior("lkj(2)", class = "cor"),    # delete this line if you don't want to estimate correlation among ranef
+                      set_prior("cauchy(0,1)", class = "sd")),
+            warmup = 1000, 
+            iter = 5000, 
+            chains = 4,
+            control = list(adapt_delta = 0.99),
+            backend = "cmdstanr", 
+            cores = 8)
+
+
+
+# Heterogenous variance by year
+ m2_cor_prior <- brm(bf(logIVI ~ 1 + chicks + chickage + (1 + chicks + chickage | year ), sigma ~ year),   # linear model with random slopes for chicks and chickage nested in year
+            data = d, 
+            prior = c(set_prior("normal(0, 1)", class = "b"),
+                      set_prior("normal(5, 1)", class = "Intercept"),
+                      set_prior("lkj(2)", class = "cor"),    # delete this line if you don't want to estimate correlation among ranef
+                      set_prior("cauchy(0,1)", class = "sd")),
+            warmup = 1000, 
+            iter = 5000, 
+            chains = 4,
+            control = list(adapt_delta = 0.99),
+            backend = "cmdstanr", 
+            cores = 8)
+
+ 
+ 
+
+
+# * Prior predictive check ------------------------------------------------
+
+## Chicks variation
+# possible values given the prior specifications - 
+d %>%
+  tidyr::expand(chickage = 5, chicks = 0:5, year = factor(2013:2019)) %>%
+  tidybayes::add_fitted_draws(m1_cor_prior, n = 100) %>% 
+  arrange(year, .draw) %>%
+  group_by(.draw, year) %>%
+  ggplot() +
+  geom_line(aes(x = chicks, y = .value, group = .draw), alpha = .2) +
+  facet_grid(~year) +
+  scale_y_continuous(limits = c(-20, 20)) +
+  ggtitle("Plausible curves before seeing data") +
+  theme_nuwcru()
+
+## chickage variation
+# possible values given the prior specifications - 
+d %>%
+  tidyr::expand(chickage = 0:12, chicks = 2, year = factor(2013:2019)) %>%
+  tidybayes::add_fitted_draws(m1_cor_prior, n = 100) %>% 
+  arrange(year, .draw) %>%
+  group_by(.draw, year) %>%
+  ggplot() +
+  geom_line(aes(x = chickage, y = .value, group = .draw), alpha = .2) +
+  facet_grid(~year) +
+  scale_y_continuous(limits = c(-500, 500)) +
+  ggtitle("Plausible curves before seeing data") +
+  theme_nuwcru()
+
+
+
+
+
+# * Fit Model -------------------------------------------------------------
+
+
+m1_cor <- brm(logIVI ~ 1 + chicks + chickage + (1 + chicks + chickage | year ),   # linear model with random slopes for chicks and chickage nested in year
+            data = d, 
+            prior = c(set_prior("normal(-0.1, 1)", class = "b"),
+                      set_prior("normal(5, 2)", class = "Intercept"),
                       set_prior("lkj(2)", class = "cor"),    # delete this line if you don't want to estimate correlation among ranef
                       set_prior("cauchy(0,2)", class = "sd")),
             warmup = 1000, 
             iter = 5000, 
             chains = 4,
-            control = list(adapt_delta = 0.98),
+            control = list(adapt_delta = 0.99),
             backend = "cmdstanr", 
             cores = 8)
-tictoc::toc()
 
 
+m2_cor <- brm(bf(logIVI ~ 1 + chicks + chickage + (1 + chicks + chickage | year ), sigma ~ year),   # linear model with random slopes for chicks and chickage nested in year
+                    data = d, 
+                    prior = c(set_prior("normal(0, 1)", class = "b"),
+                              set_prior("normal(5, 1)", class = "Intercept"),
+                              set_prior("lkj(2)", class = "cor"),    # delete this line if you don't want to estimate correlation among ranef
+                              set_prior("cauchy(0,1)", class = "sd")),
+                    warmup = 1000, 
+                    iter = 5000, 
+                    chains = 4,
+                    control = list(adapt_delta = 0.99),
+                    # backend = "cmdstanr", # R crashing with cmdstanr
+                    cores = 8)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-fit2 <- brm(logIVI ~ 1 +  chickage + (1 + chicks + chickage | year ),
-            data = d, 
-            # you can delete this prior section, brms will automatically pick some uninformative priors for you
-            prior = c(#set_prior("normal(0,5)", class = "b"),
-                      set_prior("cauchy(0,2)", class = "sd"),
-                      set_prior("lkj(2)", class = "cor")),
-            warmup = 1000, 
-            iter = 2000, 
-            chains = 4,
-            control = list(adapt_delta = 0.98),
-            cores = 8)
-
-fit2 <- brm(logIVI ~ 1 + (1 + chicks + chickage | year ),
-            data = d, 
-            # you can delete this prior section, brms will automatically pick some uninformative priors for you
-            prior = c(#set_prior("normal(0,5)", class = "b"),
-                      set_prior("cauchy(0,2)", class = "sd"),
-                      set_prior("lkj(2)", class = "cor")),
-            warmup = 1000, 
-            iter = 5000, 
-            chains = 4,
-            control = list(adapt_delta = 0.98),
-            cores = 8)
-
-waic(m1_cor)
 
 
 
 # examine residuals ~~~~~~~~~~~~~~~~~~~~~~~~~
 # work in progress
 
-resids <- residuals(m1_cor, probs = c(0.05, 0.95))
+resids <- residuals(m2_cor, probs = c(0.05, 0.95))
 x <- cbind(d, resids)
+
+fitted <- fitted(m2_cor)
+x$fitted <- fitted[,1]
 
 # something very wrong about 2019. That diagnoal line indicates an issue in the data. Error perfectly scales with logIVI in some case
 x %>%
@@ -244,11 +302,11 @@ coef(m1_cor)$year[ , 1, 1:3] %>%
   mutate(year = 2013:2019) %>%  
   select(year, everything())    
 
-# posterior predict
+## Chickage
 d %>%
-  tidyr::expand(chickage = 1:12, chicks = 1:4, year = 2013:2019) %>%
+  tidyr::expand(chickage = 1:12, chicks = 2, year = 2013:2019) %>%
   tidybayes::add_predicted_draws(m1_cor, n = 100) %>%
-  group_by(chicks, year) %>%
+  group_by(chickage, year) %>%
   summarize(mode = mean(.prediction),
             sd = sd(.prediction)) %>%
   mutate(upper95 = mode + (sd*1.96),
@@ -258,10 +316,25 @@ d %>%
          lower80 = mode - (sd*1.282),
          lower50 = mode - (sd*0.674)) %>%
   ggplot() +
-  geom_ribbon(aes(x = chicks, ymin = lower95, ymax = upper95), fill = red5, alpha = 0.4) +
-  geom_ribbon(aes(x = chicks, ymin = lower80, ymax = upper80), fill = red4, alpha = 0.5) +
-  geom_ribbon(aes(x = chicks, ymin = lower50, ymax = upper50), fill = red3, alpha = 0.8) +
-  geom_line(aes(x = chicks, y = mode), colour = red1) +
+  geom_ribbon(aes(x = chickage, ymin = lower95, ymax = upper95), fill = red5, alpha = 0.4) +
+  geom_ribbon(aes(x = chickage, ymin = lower80, ymax = upper80), fill = red4, alpha = 0.5) +
+  geom_ribbon(aes(x = chickage, ymin = lower50, ymax = upper50), fill = red3, alpha = 0.8) +
+  geom_line(aes(x = chickage, y = mode), colour = red1) +
   facet_grid(~year) +
   theme_nuwcru() 
 
+
+# Brood Size - Chicks
+# Look at the slope for brood size while holding chickage constant (specified on line 288)
+chicks_fit <- d %>%
+  tidyr::expand(chickage = 5, chicks = 1:4, year = factor(2013:2019)) %>%
+  tidybayes::add_fitted_draws(m1_cor, n = 100) 
+
+chicks_fit %>%
+ggplot() +
+  geom_line(aes(x = chicks, y = .value, group = .draw), alpha = .2) +
+  geom_point(data = filter(d, chickage == 5), aes(x = chicks, y = logIVI), colour = blue2) +
+  facet_grid(~year) +
+  scale_y_continuous(limits = c(2.5, 7.5)) +
+  ggtitle("Plausible curves before seeing data") +
+  theme_nuwcru()
